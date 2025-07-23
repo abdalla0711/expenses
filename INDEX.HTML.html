@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>برنامج حساب مصروفات الأصدقاء</title>
+  <style>
+    body {
+      font-family: 'Tahoma', sans-serif;
+      background-color: #f9fafb;
+      padding: 20px;
+    }
+    h2, h3 {
+      text-align: center;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background-color: #ffffff;
+      padding: 10px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow-x: auto;
+    }
+    input[type="number"], input[type="text"] {
+width:20%;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin: 5px;
+    }
+    .entry {
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 10px 0;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .checkbox-group label {
+      background-color: #e0f2fe;
+      padding: 3px 6px;
+      border-radius: 6px;
+      border: 1px solid #bae6fd;
+    }
+    .select-all {
+      background-color: #fde68a !important;
+    }
+    button {
+      padding: 10px;
+      background-color: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 5px 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      word-wrap: break-word;
+      font-size: 0.9em;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 6px;
+      text-align: center;
+      font-size: 0.85em;
+    }
+    .positive { color: green; }
+    .negative { color: red; }
+  </style>
+</head>
+<body>
+  <h2>برنامج حساب مصروفات الأصدقاء</h2>
+  <div class="container">
+    <label>عدد الأصدقاء: 
+<input type="number" id="friendCountInput" min="1" onchange="setFriendCount()" />
+    </label>
+    <div id="friendNames"></div>
+    <div id="inputs"></div>
+    <button onclick="addExpense()">إضافة المصروف</button>
+    <button onclick="clearAllExpenses()">🧹 حذف جميع العمليات</button>
+
+    <div style="margin-top:10px">
+      <button onclick="copyAll()">نسخ</button>
+      <button onclick="importFromPastedText()">استعادة من نص منسوخ</button>
+      <button onclick="downloadData()">تحميل</button>
+      <input type="file" onchange="uploadData(event)" />
+    </div>
+
+    <h3>الرصيد ومجموع المصروف لكل صديق</h3>
+    <table id="summary"></table>
+
+    <h3>جميع العمليات</h3>
+    <table id="operations"></table>
+  </div>
+
+  <script>
+    let friendCount = 3;
+    let expenses = [];
+    let friendNames = [];
+
+    function saveToLocal() {
+      localStorage.setItem("expenses", JSON.stringify(expenses));
+      localStorage.setItem("friendNames", JSON.stringify(friendNames));
+    }
+
+    function loadFromLocal() {
+      expenses = JSON.parse(localStorage.getItem("expenses") || "[]");
+      friendNames = JSON.parse(localStorage.getItem("friendNames") || "[]");
+    }
+
+    function setFriendCount(optionalCount) {
+  friendCount = optionalCount !== undefined 
+    ? optionalCount 
+    : parseInt(document.getElementById('friendCountInput').value);
+
+  if (friendNames.length < friendCount) {
+    for (let i = friendNames.length; i < friendCount; i++) {
+      friendNames.push("ص" + (i + 1));
+    }
+  } else {
+    friendNames = friendNames.slice(0, friendCount);
+  }
+
+  saveToLocal();
+      friendCount = parseInt(document.getElementById('friendCountInput').value);
+      if (friendNames.length < friendCount) {
+        for (let i = friendNames.length; i < friendCount; i++) {
+          friendNames.push("ص" + (i + 1));
+        }
+      } else {
+        friendNames = friendNames.slice(0, friendCount);
+      }
+      saveToLocal();
+      createFriendNameInputs();
+      createInputs();
+      renderSummary();
+      renderOperations();
+    }
+
+    function createFriendNameInputs() {
+      const div = document.getElementById('friendNames');
+      div.innerHTML = '';
+      for (let i = 0; i < friendCount; i++) {
+        const input = document.createElement('input');
+        input.type = "text";
+        input.value = friendNames[i] || "ص" + (i + 1);
+        input.oninput = () => {
+          friendNames[i] = input.value;
+          saveToLocal();
+          renderSummary();
+          renderOperations();
+        };
+        div.appendChild(input);
+      }
+    }
+
+    function createInputs() {
+      const inputsDiv = document.getElementById('inputs');
+      inputsDiv.innerHTML = '';
+      for (let i = 0; i < friendCount; i++) {
+        const entry = document.createElement('div');
+        entry.className = 'entry';
+        entry.innerHTML = `
+          <label>${friendNames[i]} صرف: <input type="number" id="amount${i}" /></label>
+          <label>بيان: <input type="text" id="note${i}" /></label>
+          <div class="checkbox-group">
+            <label class="select-all"><input type="checkbox" onclick="selectAll(this, ${i})" /> الجميع</label>
+            ${Array.from({ length: friendCount }, (_, j) => `
+              <label><input type="checkbox" id="used${i}_${j}" /> ${friendNames[j]}</label>
+            `).join('')}
+          </div>
+        `;
+        inputsDiv.appendChild(entry);
+      }
+    }
+
+    function selectAll(box, i) {
+      for (let j = 0; j < friendCount; j++) {
+        document.getElementById(`used${i}_${j}`).checked = box.checked;
+      }
+    }
+
+    function addExpense() {
+      const now = new Date().toLocaleString();
+      for (let i = 0; i < friendCount; i++) {
+        const amount = parseFloat(document.getElementById(`amount${i}`).value);
+        const note = document.getElementById(`note${i}`).value;
+        if (!isNaN(amount) && amount > 0) {
+          const used = [];
+          for (let j = 0; j < friendCount; j++) {
+            if (document.getElementById(`used${i}_${j}`).checked) used.push(j);
+          }
+          if (used.length === 0) continue;
+          expenses.push({ payer: i, amount, used, note, time: now });
+        }
+      }
+      saveToLocal();
+      createInputs();
+      renderSummary();
+      renderOperations();
+    }
+
+    function renderSummary() {
+      const results = Array(friendCount).fill(0);
+      const totals = Array(friendCount).fill(0);
+      for (const exp of expenses) {
+        const share = exp.amount / exp.used.length;
+        for (const u of exp.used) results[u] -= share;
+        results[exp.payer] += exp.amount;
+        totals[exp.payer] += exp.amount;
+      }
+      const table = document.getElementById('summary');
+      table.innerHTML = '<tr><th>الصديق</th><th>الرصيد</th><th>مجموع ما صرف</th></tr>';
+      for (let i = 0; i < friendCount; i++) {
+        table.innerHTML += `<tr>
+          <td>${friendNames[i]}</td>
+          <td class="${results[i] >= 0 ? 'positive' : 'negative'}">${results[i].toFixed(2)}</td>
+          <td>${totals[i].toFixed(2)}</td>
+        </tr>`;
+      }
+    }
+
+    function renderOperations() {
+      const table = document.getElementById('operations');
+      table.innerHTML = '<tr><th>الصديق</th><th>المبلغ</th><th>المستفيدون</th><th>ملاحظة</th><th>التاريخ</th><th>حذف</th></tr>';
+      expenses.forEach((e, idx) => {
+        const usedStr = e.used.map(i => friendNames[i]).join(', ');
+        table.innerHTML += `<tr>
+          <td>${friendNames[e.payer]}</td>
+          <td>${e.amount.toFixed(2)}</td>
+          <td>${usedStr}</td>
+          <td>${e.note}</td>
+          <td>${e.time}</td>
+          <td><button onclick="deleteExpense(${idx})">🗑️</button></td>
+        </tr>`;
+      });
+    }
+
+    function deleteExpense(index) {
+      if (confirm("هل أنت متأكد من حذف هذه العملية؟")) {
+        expenses.splice(index, 1);
+        saveToLocal();
+        renderSummary();
+        renderOperations();
+      }
+    }
+
+    function clearAllExpenses() {
+      if (confirm("هل تريد حذف جميع العمليات؟")) {
+        expenses = [];
+        saveToLocal();
+        renderSummary();
+        renderOperations();
+      }
+    }
+
+    function copyAll() {
+      const summary = document.getElementById('summary').innerText;
+      const ops = document.getElementById('operations').innerText;
+      const jsonData = JSON.stringify({ expenses, friendNames });
+      const fullText = summary + '\n\n' + ops + '\n\n[DATA_START]' + jsonData + '[DATA_END]';
+
+      const textarea = document.createElement('textarea');
+      textarea.value = fullText;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('تم النسخ');
+    }
+
+    async function importFromPastedText() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text || !text.includes('[DATA_START]')) throw new Error("No data found");
+        processImportedText(text);
+      } catch (err) {
+        alert("⚠️ لا يمكن قراءة الحافظة تلقائيًا.\n\nيجب نسخ البيانات من الجهاز الذي حفظت النص فيه.\n\nيرجى لصق النص يدويًا أدناه.");
+        const fallbackText = prompt("ألصق النص الذي نسخته من قبل:");
+        if (fallbackText) {
+          processImportedText(fallbackText);
+        }
+      }
+    }
+
+    function processImportedText(input) {
+      const match = input.match(/\[DATA_START](.*?)\[DATA_END]/s);
+      if (match) {
+        try {
+          const data = JSON.parse(match[1]);
+          expenses = data.expenses || [];
+          friendNames = data.friendNames || [];
+          friendCount = friendNames.length;
+          document.getElementById('friendCountInput').value = friendCount;
+          saveToLocal();
+          setFriendCount();
+          alert("✅ تم استعادة البيانات بنجاح");
+        } catch {
+          alert("⚠️ فشل في تحليل البيانات");
+        }
+      } else {
+        alert("⚠️ لم يتم العثور على بيانات داخل النص");
+      }
+    }
+
+    function downloadData() {
+      const blob = new Blob([JSON.stringify({ expenses, friendNames })], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'expenses.json';
+      a.click();
+    }
+
+    function uploadData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          expenses = data.expenses || [];
+          friendNames = data.friendNames || [];
+          friendCount = friendNames.length;
+          document.getElementById('friendCountInput').value = friendCount;
+          saveToLocal();
+          setFriendCount();
+        } catch {
+          alert('حدث خطأ في تحميل الملف');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+   loadFromLocal();
+const storedCount = friendNames.length > 0 ? friendNames.length : 3;
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById('friendCountInput').value = storedCount;
+  setFriendCount(storedCount);
+});
+
+
+  </script>
+</body>
+</html>
