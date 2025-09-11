@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<!-- سيتم تعديل اللغة والاتجاه تلقائياً عبر جافاسكريبت -->
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق حساب المصروفات بين الأصدقاء</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        @import url("https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800,900&display=swap");
+
+        :root {
+            /* Light Mode */
+            --card-bg: rgba(255, 255, 255, 0.6); --text-color: #1f2937; --secondary-text-color: #4b5563;
+            --border-color: rgba(255, 255, 255, 0.18); --shadow-color: rgba(31, 38, 135, 0.1);
+            --input-border: #d1d5db; --input-focus-ring: #a78bfa; --friend-card-bg: #ffffff;
+            --friend-card-shadow: rgba(0,0,0,0.05); --alert-text-green: #22c55e; --alert-text-red: #ef4444;
+        }
+        .dark-mode {
+            /* Dark Mode */
+            --card-bg: rgba(45, 55, 72, 0.75); --text-color: #f3f4f6; --secondary-text-color: #d1d5db;
+            --border-color: rgba(255, 255, 255, 0.1); --shadow-color: rgba(0, 0, 0, 0.3);
+            --input-border: #4a5568; --input-focus-ring: #8b5cf6; --friend-card-bg: #2d3748;
+            --friend-card-shadow: rgba(0,0,0,0.2); --alert-text-green: #86efac; --alert-text-red: #fca5a5;
+        }
+        body { font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; box-sizing: border-box; color: var(--text-color); }
+        body.en-lang { font-family: 'Poppins', sans-serif; }
+        .background-section { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; overflow: hidden; z-index: -1; }
+        .background-section .wave { position: absolute; left: 0; width: 100%; height: 100%; background: #4973ff; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5); transition: 0.5s; }
+        .background-section .wave span { content: ""; position: absolute; width: 325vh; height: 325vh; top: 0; left: 50%; transform: translate(-50%, -75%); background: #000; }
+        .background-section .wave span:nth-child(1) { border-radius: 45%; background: rgba(20, 20, 20, 1); animation: animate 5s linear infinite; }
+        .background-section .wave span:nth-child(2) { border-radius: 40%; background: rgba(20, 20, 20, 0.5); animation: animate 10s linear infinite; }
+        .background-section .wave span:nth-child(3) { border-radius: 42.5%; background: rgba(20, 20, 20, 0.5); animation: animate 15s linear infinite; }
+        @keyframes animate { 0% { transform: translate(-50%, -75%) rotate(0deg); } 100% { transform: translate(-50%, -75%) rotate(360deg); } }
+        .glass-card { background: var(--card-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); border: 1px solid var(--border-color); color: var(--secondary-text-color); }
+        .glass-card h2 { color: var(--text-color); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white; transition: all 0.3s ease; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
+        .friend-card, .history-item { transition: all 0.3s ease; background: var(--friend-card-bg); box-shadow: 0 1px 3px 0 var(--friend-card-shadow), 0 1px 2px 0 var(--friend-card-shadow); color: var(--secondary-text-color); }
+        .friend-card:hover, .history-item:hover { transform: translateY(-5px); box-shadow: 0 10px 25px var(--friend-card-shadow); }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        input, select { border-color: var(--input-border); background-color: var(--friend-card-bg); color: var(--text-color); }
+        input:focus, select:focus { border-color: var(--input-focus-ring); outline: none; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25); }
+        input::placeholder { color: var(--secondary-text-color); opacity: 0.7; }
+        input[type="checkbox"], input[type="radio"] { accent-color: #8b5cf6; }
+        details > summary { list-style: none; } details > summary::-webkit-details-marker { display: none; }
+        summary .toggle-icon { transition: transform 0.2s ease-in-out; }
+        details[open] summary .toggle-icon { transform: rotate(90deg); }
+        .copy-btn { background-color: #e2e8f0; color: #4a5568; padding: 0.3rem 0.6rem; border-radius: 0.375rem; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .copy-btn:hover { background-color: #cbd5e0; }
+        .dark-mode .copy-btn { background-color: #4a5568; color: #e2e8f0; } .dark-mode .copy-btn:hover { background-color: #64748b; }
+        .text-green-500 { color: var(--alert-text-green); } .text-red-500 { color: var(--alert-text-red); }
+        .tag-btn { background-color: #e5e7eb; padding: 0.3rem 0.6rem; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; margin-bottom: 0.25rem; transition: all 0.2s ease; }
+        .tag-btn:hover { background-color: #d1d5db; } .tag-btn.active { background-color: #8b5cf6; color: white; }
+        .dark-mode .tag-btn { background-color: #4b5563; color: #f3f4f6; } .dark-mode .tag-btn:hover { background-color: #374151; }
+        .dark-mode .tag-btn.active { background-color: #7c3aed; color: white; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.3s; }
+        .modal.open { opacity: 1; visibility: visible; transition: opacity 0.3s ease; }
+        .modal-content { width: 90%; max-width: 400px; position: relative; transform: scale(0.95); transition: transform 0.3s ease; }
+        .modal.open .modal-content { transform: scale(1); }
+        .close-modal-btn { position: absolute; top: 1rem; z-index: 10; background: rgba(0,0,0,0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s ease; }
+        html[dir="rtl"] .close-modal-btn { left: 1rem; }
+        html[dir="ltr"] .close-modal-btn { right: 1rem; }
+        .close-modal-btn:hover { background: rgba(0,0,0,0.4); }
+        .calculator-container { background: var(--card-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); border: 1px solid var(--border-color); width: 300px; padding: 1.5rem; color: var(--text-color); }
+        .calculator-display { background-color: var(--friend-card-bg); border: 1px solid var(--input-border); border-radius: 0.375rem; padding: 0.75rem; margin-bottom: 1rem; text-align: left; font-size: 1.5rem; min-height: 2.5rem; overflow-x: auto; white-space: nowrap; }
+        .calculator-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+        .calculator-button { background-color: var(--friend-card-bg); border: 1px solid var(--input-border); border-radius: 0.375rem; padding: 0.75rem; font-size: 1.2rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+        .calculator-button:hover { background-color: var(--input-border); }
+        .calculator-button.operator { background-color: #8b5cf6; color: white; }
+        .calculator-button.equals { background-color: #10b981; color: white; grid-column: span 2; }
+        .calculator-button.clear { background-color: #ef4444; color: white; }
+        .calculator-button.copy { background-color: #3b82f6; color: white; grid-column: span 2; }
+        .paid-by-participants-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        #statementContainer { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body class="dark-mode">
+    <section class="background-section">
+      <div class="wave"><span></span><span></span><span></span></div>
+    </section>
+
+    <div id="calculatorModal" class="modal">
+        <div class="modal-content calculator-container">
+            <button class="close-modal-btn"><i data-feather="x" class="text-white w-5 h-5"></i></button>
+            <div id="calculatorDisplay" class="calculator-display">0</div>
+            <div class="calculator-buttons">
+                <button class="calculator-button clear" data-action="clear">C</button> <button class="calculator-button" data-action="backspace">⌫</button> <button class="calculator-button operator" data-action="/">÷</button> <button class="calculator-button operator" data-action="*">×</button>
+                <button class="calculator-button" data-action="7">7</button> <button class="calculator-button" data-action="8">8</button> <button class="calculator-button" data-action="9">9</button> <button class="calculator-button operator" data-action="-">-</button>
+                <button class="calculator-button" data-action="4">4</button> <button class="calculator-button" data-action="5">5</button> <button class="calculator-button" data-action="6">6</button> <button class="calculator-button operator" data-action="+">+</button>
+                <button class="calculator-button" data-action="1">1</button> <button class="calculator-button" data-action="2">2</button> <button class="calculator-button" data-action="3">3</button> <button class="calculator-button equals" data-action="=">=</button>
+                <button class="calculator-button" data-action="0">0</button> <button class="calculator-button" data-action=".">.</button> <button class="calculator-button copy" data-action="copy" data-lang-key="copyResult">نسخ الناتج</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="friendsModal" class="modal">
+        <div class="modal-content glass-card p-6">
+            <button id="closeFriendsModalBtn" class="close-modal-btn"><i data-feather="x" class="text-white w-5 h-5"></i></button>
+            <h2 class="text-xl font-semibold mb-4 text-center" data-lang-key="manageFriends">إدارة الأصدقاء</h2>
+            <div class="flex mb-4">
+                <input type="text" id="friendName" data-lang-key-placeholder="friendNamePlaceholder" placeholder="اسم الصديق" class="flex-1 p-2 border rounded-l-md">
+                <button id="addFriendBtn" class="btn-primary text-white px-4 py-2 rounded-r-md"><i data-feather="plus"></i></button>
+            </div>
+            <div id="friendsList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="ledgersModal" class="modal">
+        <div class="modal-content glass-card p-6">
+            <button class="close-modal-btn"><i data-feather="x" class="text-white w-5 h-5"></i></button>
+            <h2 class="text-xl font-semibold mb-4 text-center" data-lang-key="manageLedgers">إدارة الملفات</h2>
+            <div class="flex mb-4">
+                <input type="text" id="newLedgerName" data-lang-key-placeholder="newLedgerPlaceholder" placeholder="اسم الملف الجديد" class="flex-1 p-2 border rounded-l-md">
+                <button id="addLedgerBtn" class="btn-primary text-white px-4 py-2 rounded-r-md"><i data-feather="plus"></i></button>
+            </div>
+            <div id="ledgersList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <div class="container mx-auto max-w-5xl">
+            <header class="text-center mb-2" data-aos="fade-down"></header>
+    
+            <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex gap-2">
+                    <button id="openLedgersModalBtn" class="bg-gray-700 text-gray-200 px-4 py-2 rounded-full flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                        <i data-feather="folder" class="w-4 h-4"></i>
+                        <span data-lang-key="myFiles">ملفاتي</span>
+                    </button>
+                    <button id="openFriendsModalBtn" class="bg-gray-700 text-gray-200 px-4 py-2 rounded-full flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                        <i data-feather="settings" class="w-4 h-4"></i>
+                        <span data-lang-key="settings">الإعدادات</span>
+                    </button>
+                    <button id="languageToggleBtn" class="bg-gray-700 text-gray-200 w-14 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all font-bold text-sm">EN</button>
+                </div>
+                <button id="darkModeToggle" class="bg-gray-700 text-gray-200 px-4 py-2 rounded-full flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                    <i data-feather="sun" class="light-icon"></i><i data-feather="moon" class="dark-icon hidden"></i>
+                    <span id="activeLedgerTitle" class="dark-mode-text" data-lang-key="appTitle">حاسبة المصروفات</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <details id="addExpenseDetails" class="glass-card lg:col-span-2" data-aos="fade-up">
+                    <summary class="p-6 cursor-pointer flex justify-between items-center">
+                        <h2 class="text-xl font-semibold" data-lang-key="addExpense">إضافة مصروف</h2>
+                        <i data-feather="chevron-left" class="toggle-icon w-5 h-5"></i>
+                    </summary>
+                    <div class="px-6 pb-6 pt-0">
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-2">
+                            <div>
+                                <label class="block mb-1" data-lang-key="amount">المبلغ</label>
+                                <div class="flex">
+                                    <input type="number" id="expenseAmount" data-lang-key-placeholder="amount" placeholder="المبلغ" class="flex-1 p-2 border rounded-l-md" min="0" step="0.01">
+                                    <button id="calculatorBtn" class="btn-primary text-white px-4 py-2 rounded-r-md flex items-center justify-center">
+                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><path d="M8 10h.01"></path><path d="M12 10h.01"></path><path d="M16 10h.01"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-1" data-lang-key="description">الوصف</label>
+                                <input type="text" id="expenseDesc" data-lang-key-placeholder="descriptionPlaceholder" placeholder="وصف المصروف" class="w-full p-2 border rounded-md">
+                                <div id="tagButtons" class="flex flex-wrap gap-2 mt-2">
+                                    <button class="tag-btn" data-tag-key="tagBreakfast">فطار</button>
+                                    <button class="tag-btn" data-tag-key="tagLunch">غذاء</button>
+                                    <button class="tag-btn" data-tag-key="tagDinner">عشاء</button>
+                                    <button class="tag-btn" data-tag-key="tagSupermarket">سوبرماركت</button>
+                                    <button class="tag-btn" data-tag-key="tagDessert">حلوى</button>
+                                    <button class="tag-btn" data-tag-key="tagDrink">مشروب</button>
+                                    <button class="tag-btn" data-tag-key="tagGas">بنزين</button>
+                                    <button class="tag-btn" data-tag-key="tagTransport">مواصلات</button>
+                                    <button class="tag-btn" data-tag-type="today" data-tag-key="tagToday">اليوم</button>
+                                    <button class="tag-btn" data-tag-type="yesterday" data-tag-key="tagYesterday">امس</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="paid-by-participants-grid mb-2">
+                            <div>
+                                <label class="block mb-1" data-lang-key="paidBy">من دفع</label>
+                                <div id="paidByContainer" class="space-y-2"></div>
+                            </div>
+                            <div>
+                                <label class="block mb-1" data-lang-key="participants">المشاركون</label>
+                                <div id="participantsContainer" class="space-y-2"></div>
+                            </div>
+                        </div>
+                        <button id="addExpenseBtn" class="btn-primary text-white w-full py-2 rounded-md pulse" data-lang-key="addExpense">إضافة المصروف</button>
+                    </div>
+                </details>
+    
+                <details class="glass-card lg:col-span-2" data-aos="fade-left" open>
+                    <summary class="p-6 cursor-pointer flex justify-between items-center">
+                        <h2 class="text-xl font-semibold" data-lang-key="results">النتائج</h2>
+                        <i data-feather="chevron-left" class="toggle-icon w-5 h-5"></i>
+                    </summary>
+                    <div id="resultsContainer" class="px-6 pb-6 pt-0 space-y-3"></div>
+                    <div class="px-6 pb-6">
+                        <button id="copyResultsBtn" class="copy-btn mt-2 w-full justify-center">
+                            <i data-feather="copy" class="w-4 h-4"></i><span data-lang-key="copyResults">نسخ النتائج</span>
+                        </button>
+                    </div>
+                </details>
+            </div>
+    
+            <details class="glass-card p-6 mt-6" data-aos="fade-up">
+                <summary class="flex justify-between items-center cursor-pointer mb-2 -mx-6 px-6">
+                    <h2 class="text-xl font-semibold" data-lang-key="expenseHistory">سجل المصروفات</h2>
+                    <i data-feather="chevron-left" class="toggle-icon w-5 h-5"></i>
+                </summary>
+                <div id="expensesHistory" class="space-y-3"></div>
+                <button id="copyExpensesBtn" class="copy-btn mt-4 w-full justify-center">
+                    <i data-feather="copy" class="w-4 h-4"></i><span data-lang-key="copyHistory">نسخ سجل المصروفات</span>
+                </button>
+            </details>
+
+            <details class="glass-card p-6 mt-6" data-aos="fade-up">
+                <summary class="flex justify-between items-center cursor-pointer mb-2 -mx-6 px-6">
+                    <h2 class="text-xl font-semibold" data-lang-key="individualStatement">كشف حساب فردي</h2>
+                    <i data-feather="chevron-left" class="toggle-icon w-5 h-5"></i>
+                </summary>
+                <div class="mb-4">
+                    <label for="friendStatementSelect" class="block mb-2" data-lang-key="selectFriend">اختر صديق لعرض كشف الحساب:</label>
+                    <select id="friendStatementSelect" class="w-full p-2 border rounded-md">
+                        <option value="" data-lang-key="selectFriendPlaceholder">-- اختر صديق --</option>
+                    </select>
+                </div>
+                <div id="statementContainer" class="space-y-3 p-4 rounded-lg" style="background: var(--friend-card-bg); min-height: 100px;"></div>
+                <button id="copyStatementBtn" class="copy-btn mt-4 w-full justify-center">
+                    <i data-feather="copy" class="w-4 h-4"></i><span data-lang-key="copyStatement">نسخ كشف الحساب</span>
+                </button>
+            </details>
+
+            <details class="glass-card p-6 mt-6" data-aos="fade-up">
+                <summary class="flex justify-between items-center cursor-pointer mb-2 -mx-6 px-6">
+                    <h2 class="text-xl font-semibold" data-lang-key="dataManagement">إدارة البيانات</h2>
+                    <i data-feather="chevron-left" class="toggle-icon w-5 h-5"></i>
+                </summary>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <button id="exportBtn" class="copy-btn flex-1 justify-center py-2">
+                        <i data-feather="download" class="w-4 h-4"></i><span data-lang-key="exportData">تصدير البيانات</span>
+                    </button>
+                    <button id="importBtn" class="copy-btn flex-1 justify-center py-2">
+                        <i data-feather="upload" class="w-4 h-4"></i><span data-lang-key="importData">استيراد البيانات</span>
+                    </button>
+                    <button id="resetBtn" class="btn-danger flex-1 justify-center py-2 rounded-md flex items-center gap-2">
+                        <i data-feather="trash-2" class="w-4 h-4"></i><span data-lang-key="resetAllData">حذف كل البيانات</span>
+                    </button>
+                    <input type="file" id="importFileInput" class="hidden" accept=".txt, .json">
+                </div>
+            </details>
+            
+            <div class="text-center mt-8 mb-4 px-4">
+                <p id="dataDisclaimer" class="text-xs text-gray-500 dark:text-gray-400" data-lang-key="dataDisclaimer">
+                    جميع البيانات مخزنة على متصفح جهازك فقط ولا يتم رفعها إلى أي خوادم.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 800, easing: 'ease-in-out', once: true });
+        feather.replace();
+        
+        const translations = {
+            ar: {
+                settings: "الإعدادات", appTitle: "حاسبة المصروفات", manageFriends: "إدارة الأصدقاء", friendNamePlaceholder: "اسم الصديق",
+                addExpense: "إضافة مصروف", amount: "المبلغ", description: "الوصف", descriptionPlaceholder: "وصف المصروف (مثال: غداء)",
+                paidBy: "من دفع", participants: "المشاركون", results: "النتائج",
+                resultsPlaceholder: "سيظهر هنا من يجب عليه الدفع لمن", copyResults: "نسخ النتائج",
+                expenseHistory: "سجل المصروفات", copyHistory: "نسخ سجل المصروفات", noFriends: "لا يوجد أصدقاء بعد.",
+                addFriendsFirst: "أضف أصدقاء أولاً.", noExpenses: "لا توجد مصروفات مسجلة.", noDues: "لا توجد مدفوعات مستحقة.",
+                addAtLeastTwoFriends: "أضف صديقين على الأقل.", alertFriendExists: "هذا الصديق موجود بالفعل!",
+                alertInvalidExpense: "الرجاء إدخال مبلغ صحيح، وصف، واختيار من دفع.", alertSelectParticipant: "الرجاء اختيار مشارك واحد على الأقل.",
+                alertNoResultsToCopy: "لا توجد نتائج لنسخها.", alertNoHistoryToCopy: "لا توجد مصروفات لنسخها.",
+                copySuccess: "تم النسخ!", copyFailed: "فشل النسخ!", copyResult: "نسخ الناتج",
+                tagBreakfast: "فطار", tagLunch: "غذاء", tagDinner: "عشاء", tagSupermarket: "سوبرماركت", tagDessert: "حلوى",
+                tagDrink: "مشروب", tagGas: "بنزين", tagTransport: "مواصلات", tagToday: "اليوم", tagYesterday: "امس",
+                historyPaidBy: (amount, paidBy) => `${amount.toFixed(2)} ريال - دفعها ${paidBy}`,
+                historyParticipants: (participants) => `المشاركون: ${participants.join('، ')}`,
+                resultsText: (from, to, amount) => `<span class="font-semibold text-red-500 dark:text-red-400">${from}</span> يجب أن يدفع لـ <span class="font-semibold text-green-500 dark:text-green-400">${to}</span> مبلغ <span class="font-bold">${amount.toFixed(2)}</span> ريال`,
+                myFiles: "ملفاتي", manageLedgers: "إدارة الملفات", newLedgerPlaceholder: "اسم الملف الجديد (مثال: رحلة)",
+                defaultLedgerName: "مصروفاتي", noLedgers: "لا توجد ملفات. قم بإنشاء واحد.",
+                individualStatement: "كشف حساب فردي", selectFriend: "اختر صديق لعرض كشف الحساب:", selectFriendPlaceholder: "-- اختر صديق --",
+                copyStatement: "نسخ كشف الحساب", noStatementToCopy: "لا يوجد كشف حساب لنسخه.", noFriendSelected: "الرجاء اختيار صديق أولاً.",
+                statementFor: (name) => `*كشف حساب لـ: ${name}*`, statementPaid: "💰 *ما دفعه (للآخرين):*", statementBenefitted: "🛍️ *ما استفاد به (من الآخرين):*",
+                statementSummary: "📋 *الملخص:*", statementTotalPaid: (amount) => `إجمالي ما دفعه للآخرين: ${amount.toFixed(2)} ريال`,
+                statementTotalBenefitted: (amount) => `إجمالي ما استفاد به من الآخرين: ${amount.toFixed(2)} ريال`,
+                statementNetOwes: (amount) => `*النتيجة النهائية: يجب أن يستلم ${amount.toFixed(2)} ريال*`,
+                statementNetMustPay: (amount) => `*النتيجة النهائية: يجب أن يدفع ${Math.abs(amount).toFixed(2)} ريال*`,
+                statementPaidEntry: (amount, desc, others) => `- دفع ${amount.toFixed(2)} ريال في '${desc}' نيابة عن: ${others}`,
+                statementBenefittedEntry: (share, desc, payer) => `- استفاد بمبلغ ${share.toFixed(2)} ريال في '${desc}' (دفعها ${payer})`,
+                dataManagement: "إدارة البيانات", exportData: "تصدير البيانات", importData: "استيراد البيانات", resetAllData: "حذف كل البيانات",
+                resetConfirm: "هل أنت متأكد؟ سيتم حذف جميع بياناتك نهائياً. سيتم تنزيل نسخة احتياطية أولاً.",
+                backupDownloaded: "تم تنزيل نسخة احتياطية تلقائياً.", importSuccess: "تم استيراد البيانات بنجاح!", importError: "فشل استيراد البيانات. الملف غير صالح أو تالف.",
+                dataDisclaimer: "جميع البيانات مخزنة على متصفح جهازك فقط ولا يتم رفعها إلى أي خوادم.",
+                // START: New Translations for Settlement Details
+                settlementDetails: "تفاصيل التسوية النهائية:",
+                settlementReceivesFrom: (amount, from) => `- يستلم ${amount.toFixed(2)} ريال من ${from}`,
+                settlementPaysTo: (amount, to) => `- يدفع ${amount.toFixed(2)} ريال إلى ${to}`,
+                // END: New Translations
+            },
+            en: {
+                settings: "Settings", appTitle: "Expense Splitter", manageFriends: "Manage Friends", friendNamePlaceholder: "Friend's name",
+                addExpense: "Add Expense", amount: "Amount", description: "Description", descriptionPlaceholder: "Expense description (e.g., Lunch)",
+                paidBy: "Paid by", participants: "Participants", results: "Results",
+                resultsPlaceholder: "Who owes who will be shown here", copyResults: "Copy Results",
+                expenseHistory: "Expenses History", copyHistory: "Copy History", noFriends: "No friends added yet.",
+                addFriendsFirst: "Add friends first.", noExpenses: "No expenses recorded.", noDues: "All settled up.",
+                addAtLeastTwoFriends: "Add at least two friends.", alertFriendExists: "This friend already exists!",
+                alertInvalidExpense: "Please enter a valid amount, description, and select who paid.", alertSelectParticipant: "Please select at least one participant.",
+                alertNoResultsToCopy: "There are no results to copy.", alertNoHistoryToCopy: "There is no history to copy.",
+                copySuccess: "Copied!", copyFailed: "Copy failed!", copyResult: "Copy Result",
+                tagBreakfast: "Breakfast", tagLunch: "Lunch", tagDinner: "Dinner", tagSupermarket: "Supermarket", tagDessert: "Dessert",
+                tagDrink: "Drink", tagGas: "Gas", tagTransport: "Transport", tagToday: "Today", tagYesterday: "Yesterday",
+                historyPaidBy: (amount, paidBy) => `SAR ${amount.toFixed(2)} - Paid by ${paidBy}`,
+                historyParticipants: (participants) => `Participants: ${participants.join(', ')}`,
+                resultsText: (from, to, amount) => `<span class="font-semibold text-red-500 dark:text-red-400">${from}</span> owes <span class="font-semibold text-green-500 dark:text-green-400">${to}</span> <span class="font-bold">SAR ${amount.toFixed(2)}</span>`,
+                myFiles: "My Files", manageLedgers: "Manage Ledgers", newLedgerPlaceholder: "New ledger name (e.g., Trip)",
+                defaultLedgerName: "My Expenses", noLedgers: "No ledgers. Create one.",
+                individualStatement: "Individual Statement", selectFriend: "Select a friend to view their statement:", selectFriendPlaceholder: "-- Select a friend --",
+                copyStatement: "Copy Statement", noStatementToCopy: "There is no statement to copy.", noFriendSelected: "Please select a friend first.",
+                statementFor: (name) => `*Statement for: ${name}*`, statementPaid: "💰 *Paid (for others):*", statementBenefitted: "🛍️ *Benefitted (from others):*",
+                statementSummary: "📋 *Summary:*", statementTotalPaid: (amount) => `Total paid for others: SAR ${amount.toFixed(2)}`,
+                statementTotalBenefitted: (amount) => `Total benefitted from others: SAR ${amount.toFixed(2)}`,
+                statementNetOwes: (amount) => `*Final Result: Should receive SAR ${amount.toFixed(2)}*`,
+                statementNetMustPay: (amount) => `*Final Result: Must pay SAR ${Math.abs(amount).toFixed(2)}*`,
+                statementPaidEntry: (amount, desc, others) => `- Paid SAR ${amount.toFixed(2)} for '${desc}' on behalf of: ${others}`,
+                statementBenefittedEntry: (share, desc, payer) => `- Benefitted SAR ${share.toFixed(2)} from '${desc}' (paid by ${payer})`,
+                dataManagement: "Data Management", exportData: "Export Data", importData: "Import Data", resetAllData: "Reset All Data",
+                resetConfirm: "Are you sure? All your data will be permanently deleted. A backup will be downloaded first.",
+                backupDownloaded: "Automatic backup has been downloaded.", importSuccess: "Data imported successfully!", importError: "Failed to import data. The file may be invalid or corrupted.",
+                dataDisclaimer: "All data is stored exclusively on your device's browser and is not uploaded to any servers.",
+                 // START: New Translations for Settlement Details
+                settlementDetails: "Final Settlement Details:",
+                settlementReceivesFrom: (amount, from) => `- Receives ${amount.toFixed(2)} SAR from ${from}`,
+                settlementPaysTo: (amount, to) => `- Pays ${amount.toFixed(2)} SAR to ${to}`,
+                // END: New Translations
+            }
+        };
+
+        // --- DOM ELEMENTS ---
+        const languageToggleBtn = document.getElementById('languageToggleBtn'), friendNameInput = document.getElementById('friendName'), addFriendBtn = document.getElementById('addFriendBtn'), friendsList = document.getElementById('friendsList'), expenseAmount = document.getElementById('expenseAmount'), expenseDesc = document.getElementById('expenseDesc'), paidByContainer = document.getElementById('paidByContainer'), participantsContainer = document.getElementById('participantsContainer'), addExpenseBtn = document.getElementById('addExpenseBtn'), resultsContainer = document.getElementById('resultsContainer'), expensesHistory = document.getElementById('expensesHistory'), copyResultsBtn = document.getElementById('copyResultsBtn'), copyExpensesBtn = document.getElementById('copyExpensesBtn'), calculatorBtn = document.getElementById('calculatorBtn'), calculatorModal = document.getElementById('calculatorModal'), calculatorDisplay = document.getElementById('calculatorDisplay'), friendsModal = document.getElementById('friendsModal'), openFriendsModalBtn = document.getElementById('openFriendsModalBtn'), closeFriendsModalBtn = document.getElementById('closeFriendsModalBtn'), darkModeToggle = document.getElementById('darkModeToggle'), addExpenseDetails = document.getElementById('addExpenseDetails'), ledgersModal = document.getElementById('ledgersModal'), openLedgersModalBtn = document.getElementById('openLedgersModalBtn'), newLedgerNameInput = document.getElementById('newLedgerName'), addLedgerBtn = document.getElementById('addLedgerBtn'), ledgersList = document.getElementById('ledgersList'), activeLedgerTitle = document.getElementById('activeLedgerTitle'), friendStatementSelect = document.getElementById('friendStatementSelect'), statementContainer = document.getElementById('statementContainer'), copyStatementBtn = document.getElementById('copyStatementBtn'), exportBtn = document.getElementById('exportBtn'), importBtn = document.getElementById('importBtn'), resetBtn = document.getElementById('resetBtn'), importFileInput = document.getElementById('importFileInput');
+        
+        // --- STATE ---
+        let friends = [], expenses = [], allData = {}, activeLedgerId = null;
+        let currentLang = localStorage.getItem('language') || 'ar';
+        
+        // --- EVENT LISTENERS ---
+        languageToggleBtn.addEventListener('click', () => setLanguage(currentLang === 'ar' ? 'en' : 'ar'));
+        darkModeToggle.addEventListener('click', () => setDarkMode(!document.body.classList.contains('dark-mode')));
+        openFriendsModalBtn.addEventListener('click', () => openModal(friendsModal));
+        calculatorBtn.addEventListener('click', () => { openModal(calculatorModal); resetCalculator(); });
+        [friendsModal, calculatorModal, ledgersModal].forEach(modal => { 
+            if(modal) {
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+                const closeBtn = modal.querySelector('.close-modal-btn');
+                if(closeBtn) closeBtn.addEventListener('click', () => closeModal(modal));
+            }
+        });
+        addFriendBtn.addEventListener('click', addFriend);
+        friendNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addFriend(); });
+        addExpenseBtn.addEventListener('click', addExpense);
+        addExpenseDetails.addEventListener('toggle', () => localStorage.setItem('addExpenseOpen', addExpenseDetails.open));
+
+        // --- CORE FUNCTIONS (Unmodified originals) ---
+        function setDarkMode(isDark) { document.body.classList.toggle('dark-mode', isDark); document.querySelector('.light-icon').classList.toggle('hidden', isDark); document.querySelector('.dark-icon').classList.toggle('hidden', !isDark); localStorage.setItem('darkMode', isDark); }
+        function openModal(modal) { modal.classList.add('open'); }
+        function closeModal(modal) { modal.classList.remove('open'); }
+        function showAlert(key) { alert(translations[currentLang][key]); }
+        function addFriend() { const name = friendNameInput.value.trim(); if (!name) return; if (friends.includes(name)) { showAlert('alertFriendExists'); return; } friends.push(name); friendNameInput.value = ''; renderAll(); saveData(); }
+        function addExpense() { const amount = parseFloat(expenseAmount.value); const description = expenseDesc.value.trim(); const paidByEl = document.querySelector('input[name="paidBy"]:checked'); if (isNaN(amount) || amount <= 0 || !description || !paidByEl) { showAlert('alertInvalidExpense'); return; } const participants = Array.from(document.querySelectorAll('#participantsContainer input:checked')).map(cb => cb.value); if (participants.length === 0) { showAlert('alertSelectParticipant'); return; } expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) }); expenseAmount.value = ''; expenseDesc.value = ''; document.querySelectorAll('#participantsContainer input').forEach(cb => cb.checked = true); renderAll(); saveData(); }
+
+        // --- DATA & STATE ---
+        function setLanguage(lang) {
+            currentLang = lang; localStorage.setItem('language', lang); const langData = translations[lang];
+            document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; document.body.classList.toggle('en-lang', lang === 'en');
+            languageToggleBtn.textContent = lang === 'ar' ? 'EN' : 'عربي';
+            document.querySelectorAll('[data-lang-key]').forEach(el => { const key = el.getAttribute('data-lang-key'); if (langData[key] && typeof langData[key] === 'string') el.textContent = langData[key]; });
+            document.querySelectorAll('[data-lang-key-placeholder]').forEach(el => { const key = el.getAttribute('data-lang-key-placeholder'); if (langData[key]) el.placeholder = langData[key]; });
+            document.querySelectorAll('.tag-btn[data-tag-key]').forEach(el => { const key = el.getAttribute('data-tag-key'); if (langData[key]) el.textContent = langData[key]; });
+            const activeLedger = allData.ledgers[activeLedgerId];
+            activeLedgerTitle.textContent = activeLedger ? activeLedger.name : translations[currentLang].appTitle;
+            renderAll();
+        }
+        function saveData() { if (activeLedgerId) { allData.ledgers[activeLedgerId].friends = friends; allData.ledgers[activeLedgerId].expenses = expenses; allData.activeLedgerId = activeLedgerId; localStorage.setItem('expenseLedgerData', JSON.stringify(allData)); } }
+        
+        // --- RENDERING ---
+        function renderAll() { renderFriendsList(); renderPaidByAndParticipants(); renderExpensesHistory(); calculateAndRenderResults(); renderStatementDropdown(); renderIndividualStatement(); feather.replace(); }
+        function renderFriendsList() { friendsList.innerHTML = friends.length === 0 ? `<p class="text-center text-sm">${translations[currentLang].noFriends}</p>` : friends.map(friend => `<div class="friend-card p-3 rounded-md flex justify-between items-center"><span>${friend}</span><button class="text-red-500 hover:text-red-700 delete-friend-btn" data-name="${friend}"><i data-feather="trash-2" width="16"></i></button></div>`).join(''); document.querySelectorAll('.delete-friend-btn').forEach(btn => btn.addEventListener('click', (e) => { const name = e.currentTarget.dataset.name; friends = friends.filter(f => f !== name); expenses = expenses.map(exp => ({...exp, participants: exp.participants.filter(p => p !== name)})).filter(exp => exp.paidBy !== name && exp.participants.length > 0); renderAll(); saveData(); })); }
+        function renderPaidByAndParticipants() { const createHtml = (type) => friends.length === 0 ? `<p class="text-sm text-center">${translations[currentLang].addFriendsFirst}</p>` : friends.map(friend => `<div class="flex items-center"><input type="${type}" id="${type}-${friend}" name="${type === 'radio' ? 'paidBy' : `p-${friend}`}" value="${friend}" ${type==='checkbox' ? 'checked': ''} class="mx-2 h-4 w-4"><label for="${type}-${friend}">${friend}</label></div>`).join(''); paidByContainer.innerHTML = createHtml('radio'); participantsContainer.innerHTML = createHtml('checkbox'); }
+        function renderExpensesHistory() { expensesHistory.innerHTML = expenses.length === 0 ? `<p class="text-center">${translations[currentLang].noExpenses}</p>` : expenses.slice().reverse().map(exp => `<div class="history-item p-4 rounded-lg"><div class="flex justify-between items-start"><div><h3 class="font-medium">${exp.description}</h3><p class="text-sm">${translations[currentLang].historyPaidBy(exp.amount, exp.paidBy)}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${exp.date}</p></div><button class="text-red-500 hover:text-red-700 delete-expense-btn" data-id="${exp.id}"><i data-feather="trash-2" width="16"></i></button></div><div class="mt-2 text-sm"><span>${translations[currentLang].historyParticipants(exp.participants)}</span></div></div>`).join(''); document.querySelectorAll('.delete-expense-btn').forEach(btn => btn.addEventListener('click', (e) => { expenses = expenses.filter(exp => exp.id !== parseInt(e.currentTarget.dataset.id)); renderAll(); saveData(); feather.replace(); })); }
+
+        // --- START: MODIFIED/NEW Calculation and Rendering Logic ---
+
+        // This function now ONLY calculates and returns the final transactions.
+        function calculateSettlement() {
+            if (friends.length < 2) return [];
+            const balances = friends.reduce((acc, f) => ({ ...acc, [f]: 0 }), {});
+            expenses.forEach(exp => {
+                if (!friends.includes(exp.paidBy) || exp.participants.length === 0) return;
+                const share = exp.amount / exp.participants.length;
+                balances[exp.paidBy] += exp.amount;
+                exp.participants.forEach(p => { if (balances[p] !== undefined) balances[p] -= share; });
+            });
+            const debtors = [], creditors = [];
+            Object.entries(balances).forEach(([n, a]) => { if (a > 0.01) creditors.push({ n, a }); else if (a < -0.01) debtors.push({ n, a: -a }); });
+            creditors.sort((a, b) => b.a - a.a); debtors.sort((a, b) => b.a - a.a);
+            const transactions = [];
+            while (creditors.length && debtors.length) {
+                const amount = Math.min(creditors[0].a, debtors[0].a);
+                transactions.push({ from: debtors[0].n, to: creditors[0].n, amount });
+                creditors[0].a -= amount; debtors[0].a -= amount;
+                if (creditors[0].a < 0.01) creditors.shift();
+                if (debtors[0].a < 0.01) debtors.shift();
+            }
+            return transactions;
+        }
+
+        // This function now uses the helper above to render the main results.
+        function calculateAndRenderResults() {
+            if (friends.length < 2) { resultsContainer.innerHTML = `<p class="text-center">${translations[currentLang].addAtLeastTwoFriends}</p>`; return; }
+            const transactions = calculateSettlement();
+            resultsContainer.innerHTML = transactions.length === 0 ? `<p class="text-center">${translations[currentLang].noDues}</p>` : transactions.map(t => `<div class="p-3 rounded-md bg-gray-50 dark:bg-gray-700"><p>${translations[currentLang].resultsText(t.from, t.to, t.amount)}</p></div>`).join('');
+        }
+        
+        // This function is CORRECTED and ENHANCED.
+        function renderIndividualStatement() {
+            const friendName = friendStatementSelect.value;
+            if (!friendName) { statementContainer.textContent = translations[currentLang].noFriendSelected; return; }
+            const t = translations[currentLang];
+            let paidEntries = [], benefittedEntries = [], totalPaidForOthers = 0, totalBenefittedFromOthers = 0;
+
+            expenses.forEach(exp => {
+                const share = exp.amount / exp.participants.length;
+                if (exp.paidBy === friendName) {
+                    const amountForOthers = exp.amount - (exp.participants.includes(friendName) ? share : 0);
+                    if (amountForOthers > 0.01) {
+                        const otherParticipants = exp.participants.filter(p => p !== friendName);
+                        // CORRECTED: Pass amountForOthers, not exp.amount
+                        paidEntries.push(t.statementPaidEntry(amountForOthers, exp.description, otherParticipants.join(', ') || 'None'));
+                        totalPaidForOthers += amountForOthers;
+                    }
+                }
+                if (exp.participants.includes(friendName) && exp.paidBy !== friendName) {
+                    benefittedEntries.push(t.statementBenefittedEntry(share, exp.description, exp.paidBy));
+                    totalBenefittedFromOthers += share;
+                }
+            });
+
+            let statementText = `${t.statementFor(friendName)}\n\n`;
+            if (paidEntries.length > 0) { statementText += `${t.statementPaid}\n${paidEntries.join('\n')}\n\n`; }
+            if (benefittedEntries.length > 0) { statementText += `${t.statementBenefitted}\n${benefittedEntries.join('\n')}\n\n`; }
+            
+            const netBalance = totalPaidForOthers - totalBenefittedFromOthers;
+            statementText += `${t.statementSummary}\n`;
+            statementText += `${t.statementTotalPaid(totalPaidForOthers)}\n`;
+            statementText += `${t.statementTotalBenefitted(totalBenefittedFromOthers)}\n\n`;
+            
+            if (Math.abs(netBalance) > 0.01) {
+                 statementText += netBalance > 0 ? t.statementNetOwes(netBalance) : t.statementNetMustPay(netBalance);
+                
+                // NEW: Add settlement details
+                const finalTransactions = calculateSettlement();
+                const receives = finalTransactions.filter(tr => tr.to === friendName);
+                const pays = finalTransactions.filter(tr => tr.from === friendName);
+
+                if (receives.length > 0 || pays.length > 0) {
+                    statementText += `\n${t.settlementDetails}\n`;
+                    receives.forEach(tr => statementText += `${t.settlementReceivesFrom(tr.amount, tr.from)}\n`);
+                    pays.forEach(tr => statementText += `${t.settlementPaysTo(tr.amount, tr.to)}\n`);
+                }
+            }
+            statementContainer.textContent = statementText;
+        }
+
+        function renderStatementDropdown() { const selectedValue = friendStatementSelect.value; friendStatementSelect.innerHTML = `<option value="">${translations[currentLang].selectFriendPlaceholder}</option>`; friends.forEach(friend => { const option = document.createElement('option'); option.value = friend; option.textContent = friend; friendStatementSelect.appendChild(option); }); if (friends.includes(selectedValue)) { friendStatementSelect.value = selectedValue; } else { friendStatementSelect.value = ''; } }
+        // --- END: MODIFIED/NEW ---
+        
+        // --- CLIPBOARD (unmodified)---
+        let calculatorValue = '0', waitingForSecondOperand = false, operator = null, previousValue = 0;
+        function updateCalculatorDisplay() { calculatorDisplay.textContent = calculatorValue; }
+        function inputDigit(digit) { if (waitingForSecondOperand) { calculatorValue = digit; waitingForSecondOperand = false; } else { calculatorValue = calculatorValue === '0' ? digit : calculatorValue + digit; } updateCalculatorDisplay(); }
+        function inputDecimal() { if (!calculatorValue.includes('.')) { calculatorValue += '.'; updateCalculatorDisplay(); } }
+        function handleOperator(nextOperator) { const inputValue = parseFloat(calculatorValue); if (operator && waitingForSecondOperand) { operator = nextOperator; return; } if (previousValue === 0) { previousValue = inputValue; } else if (operator) { const result = performCalculation(); calculatorValue = `${result}`; previousValue = result; } waitingForSecondOperand = true; operator = nextOperator; updateCalculatorDisplay(); }
+        function performCalculation() { const inputValue = parseFloat(calculatorValue); if (operator === '+') return previousValue + inputValue; if (operator === '-') return previousValue - inputValue; if (operator === '*') return previousValue * inputValue; if (operator === '/') return previousValue / inputValue; return inputValue; }
+        function resetCalculator() { calculatorValue = '0'; previousValue = 0; operator = null; waitingForSecondOperand = false; updateCalculatorDisplay(); }
+        function backspace() { calculatorValue = calculatorValue.length === 1 ? '0' : calculatorValue.slice(0, -1); updateCalculatorDisplay(); }
+        function copyCalculatorResult() { expenseAmount.value = calculatorValue; closeModal(calculatorModal); }
+        document.querySelector('.calculator-buttons').addEventListener('click', (e) => { const button = e.target.closest('.calculator-button'); if (!button) return; const action = button.dataset.action; if (action === 'clear') resetCalculator(); else if (action === 'backspace') backspace(); else if (action === '=') { if (operator) { const result = performCalculation(); calculatorValue = `${result}`; previousValue = 0; operator = null; waitingForSecondOperand = true; updateCalculatorDisplay(); } } else if (action === 'copy') copyCalculatorResult(); else if (action === '.') inputDecimal(); else if (['+', '-', '*', '/'].includes(action)) handleOperator(action); else inputDigit(action); });
+        function copyToClipboard(text, buttonElement) { if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { showCopySuccess(buttonElement); }).catch(() => { showAlert('copyFailed'); }); } else { const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px"; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showCopySuccess(buttonElement); } catch (err) { showAlert('copyFailed'); } document.body.removeChild(textArea); } }
+        function showCopySuccess(buttonElement) { const originalHTML = buttonElement.innerHTML; buttonElement.innerHTML = `<i data-feather="check" class="w-4 h-4"></i> <span>${translations[currentLang].copySuccess}</span>`; feather.replace(); setTimeout(() => { buttonElement.innerHTML = originalHTML; feather.replace(); }, 2000); }
+        copyResultsBtn.addEventListener('click', () => { const resultsText = Array.from(resultsContainer.querySelectorAll('p')).map(p => p.textContent.trim().replace(/\s+/g, ' ')).join('\n'); if (!resultsText.trim() || resultsText.includes(translations[currentLang].noDues)) { showAlert('alertNoResultsToCopy'); return; } copyToClipboard(`--- ${translations[currentLang].results} ---\n` + resultsText, copyResultsBtn); });
+        copyExpensesBtn.addEventListener('click', () => { const expensesText = expenses.slice().reverse().map(exp => { const t = translations[currentLang]; return `${exp.description}: ${t.historyPaidBy(exp.amount, exp.paidBy)} (${t.historyParticipants(exp.participants)}) - ${exp.date}`; }).join('\n'); if (!expensesText.trim()) { showAlert('alertNoHistoryToCopy'); return; } copyToClipboard(`--- ${translations[currentLang].expenseHistory} ---\n` + expensesText, copyExpensesBtn); });
+
+        // --- ALL OTHER NEW FUNCTIONS ---
+        function initializeApp() { setDarkMode(localStorage.getItem('darkMode') !== 'false'); addExpenseDetails.open = localStorage.getItem('addExpenseOpen') !== 'false'; const storedData = JSON.parse(localStorage.getItem('expenseLedgerData')); const oldFriends = JSON.parse(localStorage.getItem('friends')); const oldExpenses = JSON.parse(localStorage.getItem('expenses')); if (!storedData && (oldFriends || oldExpenses)) { const defaultId = `ledger_${Date.now()}`; allData = { ledgers: { [defaultId]: { id: defaultId, name: translations[currentLang].defaultLedgerName || "My Expenses", friends: oldFriends || [], expenses: oldExpenses || [] } }, activeLedgerId: defaultId }; localStorage.removeItem('friends'); localStorage.removeItem('expenses'); saveData(); } else if (storedData) { allData = storedData; } else { const defaultId = `ledger_${Date.now()}`; allData = { ledgers: { [defaultId]: { id: defaultId, name: translations[currentLang].defaultLedgerName || "My Expenses", friends: [], expenses: [] }}, activeLedgerId: defaultId }; } activeLedgerId = allData.activeLedgerId && allData.ledgers[allData.activeLedgerId] ? allData.activeLedgerId : Object.keys(allData.ledgers)[0]; const activeLedger = allData.ledgers[activeLedgerId]; friends = activeLedger.friends; expenses = activeLedger.expenses; setLanguage(localStorage.getItem('language') || 'ar'); }
+        function renderLedgersList() { const ledgers = Object.values(allData.ledgers); ledgersList.innerHTML = ledgers.length === 0 ? `<p class="text-center text-sm">${translations[currentLang].noLedgers}</p>` : ledgers.map(ledger => `<div class="friend-card p-3 rounded-md flex justify-between items-center ${ledger.id === activeLedgerId ? 'ring-2 ring-violet-500' : ''}"><span class="font-semibold">${ledger.name}</span><div class="flex items-center gap-2"><button class="text-green-500 hover:text-green-700 switch-ledger-btn" data-id="${ledger.id}" ${ledger.id === activeLedgerId ? 'disabled' : ''}><i data-feather="log-in" width="16"></i></button><button class="text-red-500 hover:text-red-700 delete-ledger-btn" data-id="${ledger.id}" ${Object.keys(allData.ledgers).length <= 1 ? 'disabled' : ''}><i data-feather="trash-2" width="16"></i></button></div></div>`).join(''); document.querySelectorAll('.switch-ledger-btn').forEach(btn => btn.addEventListener('click', e => switchLedger(e.currentTarget.dataset.id))); document.querySelectorAll('.delete-ledger-btn').forEach(btn => btn.addEventListener('click', e => deleteLedger(e.currentTarget.dataset.id))); feather.replace(); }
+        function createNewLedger() { const name = newLedgerNameInput.value.trim(); if (!name) return; const newId = `ledger_${Date.now()}`; allData.ledgers[newId] = { id: newId, name: name, friends: [], expenses: [] }; newLedgerNameInput.value = ''; switchLedger(newId); renderLedgersList(); }
+        function switchLedger(id) { activeLedgerId = id; const activeLedger = allData.ledgers[activeLedgerId]; friends = activeLedger.friends; expenses = activeLedger.expenses; saveData(); setLanguage(currentLang); closeModal(ledgersModal); }
+        function deleteLedger(id) { if (Object.keys(allData.ledgers).length <= 1) return; if (confirm(`هل أنت متأكد من حذف هذا الملف؟ لا يمكن التراجع عن هذا الإجراء.`)) { delete allData.ledgers[id]; if (activeLedgerId === id) { switchLedger(Object.keys(allData.ledgers)[0]); } saveData(); renderLedgersList(); } }
+        openLedgersModalBtn.addEventListener('click', () => { renderLedgersList(); openModal(ledgersModal); });
+        addLedgerBtn.addEventListener('click', createNewLedger);
+        newLedgerNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') createNewLedger(); });
+        friendStatementSelect.addEventListener('change', renderIndividualStatement);
+        copyStatementBtn.addEventListener('click', () => { const statementText = statementContainer.textContent; if (!statementText || statementText === translations[currentLang].noFriendSelected) { showAlert('noStatementToCopy'); return; } copyToClipboard(statementText, copyStatementBtn); });
+        function exportData() { const dataStr = JSON.stringify(allData, null, 2); const dataBlob = new Blob([dataStr], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); const date = new Date().toISOString().slice(0, 10); link.download = `expenses-backup-${date}.txt`; link.href = url; link.click(); URL.revokeObjectURL(url); }
+        function handleImport(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const importedData = JSON.parse(e.target.result); if (importedData.ledgers && importedData.activeLedgerId) { localStorage.setItem('expenseLedgerData', JSON.stringify(importedData)); showAlert('importSuccess'); location.reload(); } else { showAlert('importError'); } } catch (error) { showAlert('importError'); } }; reader.readAsText(file); }
+        function resetAllData() { if (confirm(translations[currentLang].resetConfirm)) { exportData(); alert(translations[currentLang].backupDownloaded); localStorage.removeItem('expenseLedgerData'); location.reload(); } }
+        exportBtn.addEventListener('click', exportData);
+        importBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', handleImport);
+        resetBtn.addEventListener('click', resetAllData);
+        document.querySelectorAll('.tag-btn').forEach(btn => { btn.addEventListener('click', () => { let textToAppend; const type = btn.dataset.tagType; if (type === 'today') { textToAppend = new Date().toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US'); } else if (type === 'yesterday') { const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); textToAppend = yesterday.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US'); } else { textToAppend = btn.textContent; } expenseDesc.value = expenseDesc.value ? `${expenseDesc.value} ${textToAppend}` : textToAppend; document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 500); }); });
+        
+        initializeApp();
+    </script>
+</body>
+</html>
