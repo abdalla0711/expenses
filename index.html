@@ -223,6 +223,10 @@
                                         </svg>
                                     </button>
                                 </div>
+                                <div class="mt-2">
+                                    <label class="block mb-1 text-xs" data-lang-key="extraForPayerLabel">مبلغ إضافي خاص بمن دفع (اختياري) — يُضاف على حصته فقط دون بقية المشاركين</label>
+                                    <input type="number" id="expenseExtraForPayer" data-lang-key-placeholder="extraForPayerPlaceholder" placeholder="0" class="w-full p-2 border rounded-md text-sm" min="0" step="0.01">
+                                </div>
                             </div>
                             <div>
                                 <label class="block mb-1" data-lang-key="description">الوصف</label>
@@ -366,6 +370,9 @@
                 enableMediator: "تفعيل صديق وسيط", mediatorFriend: "الصديق الوسيط", mediatorBetween: "بين هذين الصديقين (بدون تسوية مباشرة بينهما)",
                 settlementReceivesFrom: (amount, from) => `⬅️ يستلم ${amount.toFixed(2)} ريال من ${from}`,
                 settlementPaysTo: (amount, to) => `➡️ يدفع ${amount.toFixed(2)} ريال إلى ${to}`,
+                statementCreatedOn: (dateStr) => `🗓️ تاريخ الإنشاء: ${dateStr}`,
+                extraForPayerLabel: "مبلغ إضافي خاص بمن دفع (اختياري) — يُضاف على حصته فقط دون بقية المشاركين",
+                extraForPayerPlaceholder: "0",
             },
             en: {
                 settings: "Settings", appTitle: "Expense Splitter", manageFriends: "Manage Friends", friendNamePlaceholder: "Friend's name",
@@ -401,11 +408,14 @@
                 enableMediator: "Enable a mediator friend", mediatorFriend: "Mediator friend", mediatorBetween: "Between these two friends (no direct settlement)",
                 settlementReceivesFrom: (amount, from) => `⬅️ Receives SAR ${amount.toFixed(2)} from ${from}`,
                 settlementPaysTo: (amount, to) => `➡️ Pays SAR ${amount.toFixed(2)} to ${to}`,
+                statementCreatedOn: (dateStr) => `🗓️ Created: ${dateStr}`,
+                extraForPayerLabel: "Extra personal amount for the payer (optional) — added only to their share",
+                extraForPayerPlaceholder: "0",
             }
         };
 
         // --- DOM ELEMENTS ---
-        const languageToggleBtn = document.getElementById('languageToggleBtn'), friendNameInput = document.getElementById('friendName'), addFriendBtn = document.getElementById('addFriendBtn'), friendsList = document.getElementById('friendsList'), expenseAmount = document.getElementById('expenseAmount'), expenseDesc = document.getElementById('expenseDesc'), paidByContainer = document.getElementById('paidByContainer'), participantsContainer = document.getElementById('participantsContainer'), addExpenseBtn = document.getElementById('addExpenseBtn'), resultsContainer = document.getElementById('resultsContainer'), expensesHistory = document.getElementById('expensesHistory'), copyResultsBtn = document.getElementById('copyResultsBtn'), copyExpensesBtn = document.getElementById('copyExpensesBtn'), calculatorBtn = document.getElementById('calculatorBtn'), calculatorModal = document.getElementById('calculatorModal'), calculatorDisplay = document.getElementById('calculatorDisplay'), friendsModal = document.getElementById('friendsModal'), openFriendsModalBtn = document.getElementById('openFriendsModalBtn'), closeFriendsModalBtn = document.getElementById('closeFriendsModalBtn'), darkModeToggle = document.getElementById('darkModeToggle'), addExpenseDetails = document.getElementById('addExpenseDetails'), ledgersModal = document.getElementById('ledgersModal'), openLedgersModalBtn = document.getElementById('openLedgersModalBtn'), newLedgerNameInput = document.getElementById('newLedgerName'), addLedgerBtn = document.getElementById('addLedgerBtn'), ledgersList = document.getElementById('ledgersList'), activeLedgerTitle = document.getElementById('activeLedgerTitle'), friendStatementSelect = document.getElementById('friendStatementSelect'), statementContainer = document.getElementById('statementContainer'), copyStatementBtn = document.getElementById('copyStatementBtn'), exportBtn = document.getElementById('exportBtn'), importBtn = document.getElementById('importBtn'), resetBtn = document.getElementById('resetBtn'), importFileInput = document.getElementById('importFileInput'), mediatorEnabledCheckbox = document.getElementById('mediatorEnabled'), mediatorFieldsDiv = document.getElementById('mediatorFields'), mediatorSelect = document.getElementById('mediatorSelect'), mediatorPersonASelect = document.getElementById('mediatorPersonASelect'), mediatorPersonBSelect = document.getElementById('mediatorPersonBSelect');
+        const languageToggleBtn = document.getElementById('languageToggleBtn'), friendNameInput = document.getElementById('friendName'), addFriendBtn = document.getElementById('addFriendBtn'), friendsList = document.getElementById('friendsList'), expenseAmount = document.getElementById('expenseAmount'), expenseDesc = document.getElementById('expenseDesc'), paidByContainer = document.getElementById('paidByContainer'), participantsContainer = document.getElementById('participantsContainer'), addExpenseBtn = document.getElementById('addExpenseBtn'), resultsContainer = document.getElementById('resultsContainer'), expensesHistory = document.getElementById('expensesHistory'), copyResultsBtn = document.getElementById('copyResultsBtn'), copyExpensesBtn = document.getElementById('copyExpensesBtn'), calculatorBtn = document.getElementById('calculatorBtn'), calculatorModal = document.getElementById('calculatorModal'), calculatorDisplay = document.getElementById('calculatorDisplay'), friendsModal = document.getElementById('friendsModal'), openFriendsModalBtn = document.getElementById('openFriendsModalBtn'), closeFriendsModalBtn = document.getElementById('closeFriendsModalBtn'), darkModeToggle = document.getElementById('darkModeToggle'), addExpenseDetails = document.getElementById('addExpenseDetails'), ledgersModal = document.getElementById('ledgersModal'), openLedgersModalBtn = document.getElementById('openLedgersModalBtn'), newLedgerNameInput = document.getElementById('newLedgerName'), addLedgerBtn = document.getElementById('addLedgerBtn'), ledgersList = document.getElementById('ledgersList'), activeLedgerTitle = document.getElementById('activeLedgerTitle'), friendStatementSelect = document.getElementById('friendStatementSelect'), statementContainer = document.getElementById('statementContainer'), copyStatementBtn = document.getElementById('copyStatementBtn'), exportBtn = document.getElementById('exportBtn'), importBtn = document.getElementById('importBtn'), resetBtn = document.getElementById('resetBtn'), importFileInput = document.getElementById('importFileInput'), mediatorEnabledCheckbox = document.getElementById('mediatorEnabled'), mediatorFieldsDiv = document.getElementById('mediatorFields'), mediatorSelect = document.getElementById('mediatorSelect'), mediatorPersonASelect = document.getElementById('mediatorPersonASelect'), mediatorPersonBSelect = document.getElementById('mediatorPersonBSelect'), expenseExtraForPayer = document.getElementById('expenseExtraForPayer');
         
         // --- STATE ---
         let friends = [], expenses = [], allData = {}, activeLedgerId = null;
@@ -430,6 +440,8 @@
         addExpenseBtn.addEventListener('click', addExpense);
         addExpenseDetails.addEventListener('toggle', () => localStorage.setItem('addExpenseOpen', addExpenseDetails.open));
         expenseAmount.addEventListener('input', updateParticipantShares);
+        expenseExtraForPayer.addEventListener('input', updateParticipantShares);
+        paidByContainer.addEventListener('change', updateParticipantShares);
         participantsContainer.addEventListener('change', (e) => { if (e.target.classList.contains('participant-checkbox')) { if (!e.target.checked) participantLocks.delete(e.target.dataset.name); updateParticipantShares(); } });
         participantsContainer.addEventListener('input', (e) => { if (e.target.classList.contains('participant-share-input') && !e.target.disabled) { participantLocks.add(e.target.dataset.name); updateParticipantShares(); } });
         mediatorEnabledCheckbox.addEventListener('change', () => { mediatorConfig.enabled = mediatorEnabledCheckbox.checked; renderMediatorSettings(); saveData(); calculateAndRenderResults(); renderIndividualStatement(); });
@@ -443,7 +455,7 @@
         function closeModal(modal) { modal.classList.remove('open'); }
         function showAlert(key) { alert(translations[currentLang][key]); }
         function addFriend() { const name = friendNameInput.value.trim(); if (!name) return; if (friends.includes(name)) { showAlert('alertFriendExists'); return; } friends.push(name); friendNameInput.value = ''; renderAll(); saveData(); }
-        function addExpense() { const amount = parseFloat(expenseAmount.value); const description = expenseDesc.value.trim(); const paidByEl = document.querySelector('input[name="paidBy"]:checked'); if (isNaN(amount) || amount <= 0 || !description || !paidByEl) { showAlert('alertInvalidExpense'); return; } const participantCheckboxes = Array.from(document.querySelectorAll('#participantsContainer .participant-checkbox:checked')); if (participantCheckboxes.length === 0) { showAlert('alertSelectParticipant'); return; } const participants = participantCheckboxes.map(cb => cb.dataset.name); const shares = {}; participants.forEach(name => { const input = document.querySelector(`.participant-share-input[data-name="${CSS.escape(name)}"]`); shares[name] = parseFloat(input.value) || 0; }); expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, shares, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) }); expenseAmount.value = ''; expenseDesc.value = ''; document.querySelectorAll('#participantsContainer .participant-checkbox').forEach(cb => cb.checked = true); participantLocks.clear(); updateParticipantShares(); renderAll(); saveData(); }
+        function addExpense() { const amount = parseFloat(expenseAmount.value); const description = expenseDesc.value.trim(); const paidByEl = document.querySelector('input[name="paidBy"]:checked'); if (isNaN(amount) || amount <= 0 || !description || !paidByEl) { showAlert('alertInvalidExpense'); return; } const participantCheckboxes = Array.from(document.querySelectorAll('#participantsContainer .participant-checkbox:checked')); if (participantCheckboxes.length === 0) { showAlert('alertSelectParticipant'); return; } const participants = participantCheckboxes.map(cb => cb.dataset.name); const shares = {}; participants.forEach(name => { const input = document.querySelector(`.participant-share-input[data-name="${CSS.escape(name)}"]`); shares[name] = parseFloat(input.value) || 0; }); expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, shares, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) }); expenseAmount.value = ''; expenseDesc.value = ''; expenseExtraForPayer.value = ''; document.querySelectorAll('#participantsContainer .participant-checkbox').forEach(cb => cb.checked = true); document.querySelectorAll('input[name="paidBy"]').forEach(rb => rb.checked = false); participantLocks.clear(); updateParticipantShares(); renderAll(); saveData(); }
 
         // --- DATA & STATE ---
         function setLanguage(lang) {
@@ -483,11 +495,29 @@
         }
         function updateParticipantShares() {
             const total = parseFloat(expenseAmount.value) || 0;
+            const extra = parseFloat(expenseExtraForPayer.value) || 0;
+            const paidByEl = document.querySelector('input[name="paidBy"]:checked');
+            const payerName = paidByEl ? paidByEl.value : null;
             const checkboxes = Array.from(participantsContainer.querySelectorAll('.participant-checkbox'));
-            checkboxes.forEach(cb => { const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(cb.dataset.name)}"]`); if (input) input.disabled = !cb.checked; if (!cb.checked) participantLocks.delete(cb.dataset.name); });
             const checkedNames = checkboxes.filter(cb => cb.checked).map(cb => cb.dataset.name);
-            const lockedNames = checkedNames.filter(n => participantLocks.has(n));
-            const unlockedNames = checkedNames.filter(n => !participantLocks.has(n));
+            const useExtra = extra > 0.009 && payerName && checkedNames.includes(payerName);
+
+            checkboxes.forEach(cb => {
+                const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(cb.dataset.name)}"]`);
+                if (!input) return;
+                const isForcedPayer = useExtra && cb.dataset.name === payerName;
+                input.disabled = !cb.checked || isForcedPayer;
+                if (!cb.checked || isForcedPayer) participantLocks.delete(cb.dataset.name);
+            });
+
+            if (useExtra) {
+                const base = checkedNames.length > 0 ? (total - extra) / checkedNames.length : 0;
+                const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(payerName)}"]`);
+                if (input) input.value = (base + extra).toFixed(2);
+            }
+
+            const lockedNames = checkedNames.filter(n => (useExtra && n === payerName) || participantLocks.has(n));
+            const unlockedNames = checkedNames.filter(n => !(useExtra && n === payerName) && !participantLocks.has(n));
             let lockedSum = 0;
             lockedNames.forEach(n => { const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(n)}"]`); lockedSum += parseFloat(input.value) || 0; });
             const remaining = total - lockedSum;
@@ -496,6 +526,29 @@
             checkboxes.filter(cb => !cb.checked).forEach(cb => { const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(cb.dataset.name)}"]`); if (input) input.value = '0.00'; });
         }
         function getShare(exp, name) { if (exp.shares && Object.prototype.hasOwnProperty.call(exp.shares, name)) return exp.shares[name]; return exp.participants.includes(name) ? exp.amount / exp.participants.length : 0; }
+
+        // إذا وُجد تاريخ داخل وصف المصروف (مثلاً عبر زر "اليوم"/"امس") يُستخدم كتاريخ فعلي للعملية بدل تاريخ الإنشاء
+        function parseDateFromDescription(text) {
+            if (!text) return null;
+            const clean = text.replace(/[\u200e\u200f\u061c]/g, '');
+            const match = clean.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if (!match) return null;
+            const p1 = parseInt(match[1], 10), p2 = parseInt(match[2], 10), year = parseInt(match[3], 10);
+            let day, month;
+            if (p1 > 12 && p2 <= 12) { day = p1; month = p2; }
+            else if (p2 > 12 && p1 <= 12) { day = p2; month = p1; }
+            else { day = p1; month = p2; }
+            if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+            const d = new Date(year, month - 1, day);
+            return isNaN(d.getTime()) ? null : d;
+        }
+        function getExpenseDate(exp) { return parseDateFromDescription(exp.description) || new Date(exp.id); }
+        function formatDateLabel(date) {
+            const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+            const weekday = date.toLocaleDateString(locale, { weekday: 'long' });
+            const dateStr = date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+            return `${weekday}، ${dateStr}`;
+        }
         function renderExpensesHistory() { expensesHistory.innerHTML = expenses.length === 0 ? `<p class="text-center">${translations[currentLang].noExpenses}</p>` : expenses.slice().reverse().map(exp => `<div class="history-item p-4 rounded-lg"><div class="flex justify-between items-start"><div><h3 class="font-medium">${exp.description}</h3><p class="text-sm">${translations[currentLang].historyPaidBy(exp.amount, exp.paidBy)}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${exp.date}</p></div><button class="text-red-500 hover:text-red-700 delete-expense-btn" data-id="${exp.id}"><i data-feather="trash-2" width="16"></i></button></div><div class="mt-2 text-sm"><span>${translations[currentLang].historyParticipants(exp.participants)}</span></div></div>`).join(''); document.querySelectorAll('.delete-expense-btn').forEach(btn => btn.addEventListener('click', (e) => { expenses = expenses.filter(exp => exp.id !== parseInt(e.currentTarget.dataset.id)); renderAll(); saveData(); feather.replace(); })); }
 
         // --- CALCULATION LOGIC ---
@@ -570,24 +623,26 @@
             let totalPaid = 0, totalBenefitted = 0;
             const entries = [];
 
-            expenses.slice().sort((a, b) => a.id - b.id).forEach(exp => {
+            expenses.slice().sort((a, b) => getExpenseDate(a) - getExpenseDate(b)).forEach(exp => {
+                const dateLabel = formatDateLabel(getExpenseDate(exp));
                 if (exp.paidBy === friendName) {
                     totalPaid += exp.amount;
-                    entries.push({ type: 'paid', desc: exp.description, amount: exp.amount });
+                    entries.push({ type: 'paid', desc: exp.description, amount: exp.amount, dateLabel });
                 }
                 if (exp.participants.includes(friendName)) {
                     const share = getShare(exp, friendName);
                     if (share > 0.01) {
                         totalBenefitted += share;
-                        entries.push({ type: 'benefit', desc: exp.description, amount: share });
+                        entries.push({ type: 'benefit', desc: exp.description, amount: share, dateLabel });
                     }
                 }
             });
 
-            let statementText = `${t.statementFor(friendName)}\n`;
+            let statementText = `${t.statementFor(friendName)}`;
+            statementText += `\n${t.statementCreatedOn(formatDateLabel(new Date()))}\n`;
             if (entries.length > 0) {
                 statementText += `\n${t.statementOperations}`;
-                entries.forEach(e => { statementText += e.type === 'paid' ? `\n🔸 ${t.operationPaid}: ${e.desc} — ${e.amount.toFixed(2)} ${t.currencyUnit}` : `\n🔹 ${t.operationBenefit}: ${e.desc} — ${e.amount.toFixed(2)} ${t.currencyUnit}`; });
+                entries.forEach(e => { statementText += e.type === 'paid' ? `\n🔸 ${t.operationPaid}: ${e.desc} — ${e.amount.toFixed(2)} ${t.currencyUnit} (${e.dateLabel})` : `\n🔹 ${t.operationBenefit}: ${e.desc} — ${e.amount.toFixed(2)} ${t.currencyUnit} (${e.dateLabel})`; });
                 statementText += `\n`;
             }
 
