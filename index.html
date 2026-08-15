@@ -390,6 +390,7 @@
                 hideExtraLabel: "− إخفاء المبلغ الإضافي",
                 extraPersonPlaceholder: "-- لمن؟ --",
                 addExtraRow: "إضافة شخص آخر",
+                extraNotePlaceholder: "ملاحظة (اختياري)",
                 updateExpense: "تحديث المصروف",
                 cancelEdit: "إلغاء التعديل",
                 statementRunningBalanceOwed: (amount) => `له${amount}SR`,
@@ -437,6 +438,7 @@
                 hideExtraLabel: "− Hide extra amount",
                 extraPersonPlaceholder: "-- For whom? --",
                 addExtraRow: "Add another person",
+                extraNotePlaceholder: "Note (optional)",
                 updateExpense: "Update Expense",
                 cancelEdit: "Cancel Edit",
                 statementRunningBalanceOwed: (amount) => `owed${amount}SR`,
@@ -508,15 +510,16 @@
             const participants = participantCheckboxes.map(cb => cb.dataset.name);
             const shares = {};
             participants.forEach(name => { const input = document.querySelector(`.participant-share-input[data-name="${CSS.escape(name)}"]`); shares[name] = parseFloat(input.value) || 0; });
+            const extraAllocations = getExtraAllocations().filter(a => participants.includes(a.name));
 
             if (editingExpenseId !== null) {
                 const idx = expenses.findIndex(e => e.id === editingExpenseId);
                 if (idx !== -1) {
-                    expenses[idx] = { ...expenses[idx], amount, description, paidBy: paidByEl.value, participants, shares };
+                    expenses[idx] = { ...expenses[idx], amount, description, paidBy: paidByEl.value, participants, shares, extraAllocations };
                 }
                 editingExpenseId = null;
             } else {
-                expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, shares, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) });
+                expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, shares, extraAllocations, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) });
             }
 
             resetExpenseForm();
@@ -543,8 +546,14 @@
             expenseAmount.value = exp.amount;
             expenseDesc.value = exp.description;
             extraAllocationsContainer.innerHTML = '';
-            extraForPayerWrap.classList.add('hidden');
-            toggleExtraBtn.querySelector('span').textContent = translations[currentLang].showExtraLabel;
+            if (exp.extraAllocations && exp.extraAllocations.length > 0) {
+                extraForPayerWrap.classList.remove('hidden');
+                toggleExtraBtn.querySelector('span').textContent = translations[currentLang].hideExtraLabel;
+                exp.extraAllocations.forEach(a => addExtraAllocationRow(a.name, a.amount, a.note));
+            } else {
+                extraForPayerWrap.classList.add('hidden');
+                toggleExtraBtn.querySelector('span').textContent = translations[currentLang].showExtraLabel;
+            }
             document.querySelectorAll('input[name="paidBy"]').forEach(rb => { rb.checked = (rb.value === exp.paidBy); });
             participantLocks = new Set(exp.participants);
             document.querySelectorAll('#participantsContainer .participant-checkbox').forEach(cb => {
@@ -611,20 +620,23 @@
                 sel.value = friends.includes(prev) ? prev : '';
             });
         }
-        function addExtraAllocationRow(presetPerson) {
+        function addExtraAllocationRow(presetPerson, presetAmount, presetNote) {
             const placeholder = `<option value="">${translations[currentLang].extraPersonPlaceholder}</option>`;
             const optionsHtml = friends.map(f => `<option value="${f}">${f}</option>`).join('');
             const row = document.createElement('div');
-            row.className = 'flex gap-2 extra-allocation-row';
-            row.innerHTML = `<select class="extra-person-select p-2 border rounded-md text-sm" style="max-width:40%;">${placeholder}${optionsHtml}</select><input type="number" class="extra-amount-input flex-1 p-2 border rounded-md text-sm" placeholder="0" min="0" step="0.01"><button type="button" class="extra-remove-row-btn text-red-500 px-2"><i data-feather="x" class="w-4 h-4"></i></button>`;
+            row.className = 'extra-allocation-row mb-2';
+            row.innerHTML = `<div class="flex gap-2"><select class="extra-person-select p-2 border rounded-md text-sm" style="max-width:40%;">${placeholder}${optionsHtml}</select><input type="number" class="extra-amount-input flex-1 p-2 border rounded-md text-sm" placeholder="0" min="0" step="0.01"><button type="button" class="extra-remove-row-btn text-red-500 px-2"><i data-feather="x" class="w-4 h-4"></i></button></div><input type="text" class="extra-note-input w-full p-2 border rounded-md text-xs mt-1" data-lang-key-placeholder="extraNotePlaceholder" placeholder="${translations[currentLang].extraNotePlaceholder}">`;
             extraAllocationsContainer.appendChild(row);
             if (presetPerson) row.querySelector('.extra-person-select').value = presetPerson;
+            if (presetAmount !== undefined && presetAmount !== null) row.querySelector('.extra-amount-input').value = presetAmount;
+            if (presetNote) row.querySelector('.extra-note-input').value = presetNote;
             feather.replace();
         }
         function getExtraAllocations() {
             return Array.from(extraAllocationsContainer.querySelectorAll('.extra-allocation-row')).map(row => ({
                 name: row.querySelector('.extra-person-select').value,
-                amount: parseFloat(row.querySelector('.extra-amount-input').value) || 0
+                amount: parseFloat(row.querySelector('.extra-amount-input').value) || 0,
+                note: (row.querySelector('.extra-note-input').value || '').trim()
             })).filter(a => a.name && a.amount > 0.009);
         }
         function updateParticipantShares() {
@@ -779,7 +791,8 @@
                     const share = getShare(exp, friendName);
                     if (share > 0.01) {
                         totalBenefitted += share;
-                        entries.push({ type: 'benefit', desc: exp.description, amount: share, dateLabel });
+                        const notes = (exp.extraAllocations || []).filter(a => a.name === friendName && a.note).map(a => a.note);
+                        entries.push({ type: 'benefit', desc: exp.description, amount: share, dateLabel, note: notes.join('، ') });
                     }
                 }
             });
@@ -794,7 +807,8 @@
                     const balanceStr = Math.abs(runningBalance) < 0.01 ? t.statementRunningBalanceZero : (runningBalance > 0 ? t.statementRunningBalanceOwed(fmtAmt(runningBalance)) : t.statementRunningBalanceOwes(fmtAmt(Math.abs(runningBalance))));
                     const icon = e.type === 'paid' ? '🔸' : '🔹';
                     const opLabel = e.type === 'paid' ? t.operationPaid : t.operationBenefit;
-                    statementText += `\n${icon}${opLabel}:${fmtAmt(e.amount)}${t.currencyUnit}|${e.desc}|${e.dateLabel}|${balanceStr}`;
+                    const descPart = e.note ? `${e.desc}(${e.note})` : e.desc;
+                    statementText += `\n${icon}${opLabel}:${fmtAmt(e.amount)}${t.currencyUnit}|${descPart}|${e.dateLabel}|${balanceStr}`;
                 });
                 statementText += `\n`;
             }
