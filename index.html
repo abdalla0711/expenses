@@ -370,19 +370,19 @@
                 individualStatement: "كشف حساب فردي", selectFriend: "اختر صديق لعرض كشف الحساب:", selectFriendPlaceholder: "-- اختر صديق --",
                 copyStatement: "نسخ كشف الحساب", noStatementToCopy: "لا يوجد كشف حساب لنسخه.", noFriendSelected: "الرجاء اختيار صديق أولاً.",
                 statementFor: (name) => `📋 كشف حساب: ${name}`,
-                statementOperations: `📝 العمليات:`, operationPaid: "دفع", operationBenefit: "استفاد", currencyUnit: "ريال",
-                statementTotalPaid: (amount) => `إجمالي دفع: ${amount.toFixed(2)} ريال`,
-                statementTotalBenefitted: (amount) => `إجمالي استفاد: ${amount.toFixed(2)} ريال`,
-                statementNetOwes: (amount) => `الصافي: له ${amount.toFixed(2)} ريال`,
-                statementNetMustPay: (amount) => `الصافي: عليه ${amount.toFixed(2)} ريال`,
+                statementOperations: `📝 العمليات:`, operationPaid: "دفع", operationBenefit: "اخذ", currencyUnit: "SR",
+                statementTotalPaid: (amount) => `إجمالي دفع: ${amount.toFixed(2)} SR`,
+                statementTotalBenefitted: (amount) => `إجمالي استفاد: ${amount.toFixed(2)} SR`,
+                statementNetOwes: (amount) => `الصافي: له ${amount.toFixed(2)} SR`,
+                statementNetMustPay: (amount) => `الصافي: عليه ${amount.toFixed(2)} SR`,
                 statementSettled: `الصافي: متزن ✅`,
                 dataManagement: "إدارة البيانات", exportData: "تصدير البيانات", importData: "استيراد البيانات", resetAllData: "حذف كل البيانات",
                 resetConfirm: "هل أنت متأكد؟ سيتم حذف جميع بياناتك نهائياً. سيتم تنزيل نسخة احتياطية أولاً.",
                 backupDownloaded: "تم تنزيل نسخة احتياطية تلقائياً.", importSuccess: "تم استيراد البيانات بنجاح!", importError: "فشل استيراد البيانات. الملف غير صالح أو تالف.",
                 dataDisclaimer: "جميع البيانات مخزنة على متصفح جهازك فقط ولا يتم رفعها إلى أي خوادم.",
                 enableMediator: "تفعيل صديق وسيط", mediatorFriend: "الصديق الوسيط", mediatorBetween: "بين هذين الصديقين (بدون تسوية مباشرة بينهما)",
-                settlementReceivesFrom: (amount, from) => `⬅️ يستلم ${amount.toFixed(2)} ريال من ${from}`,
-                settlementPaysTo: (amount, to) => `➡️ يدفع ${amount.toFixed(2)} ريال إلى ${to}`,
+                settlementReceivesFrom: (amount, from) => `⬅️ يستلم ${amount.toFixed(2)} SR من ${from}`,
+                settlementPaysTo: (amount, to) => `➡️ يدفع ${amount.toFixed(2)} SR إلى ${to}`,
                 statementCreatedOn: (dateStr) => `🗓️ تاريخ الإنشاء: ${dateStr}`,
                 extraForPayerLabel: "مبلغ إضافي خاص بشخص معيّن (اختياري) — يُضاف على حصته فقط دون بقية المشاركين",
                 extraForPayerPlaceholder: "0",
@@ -392,9 +392,9 @@
                 addExtraRow: "إضافة شخص آخر",
                 updateExpense: "تحديث المصروف",
                 cancelEdit: "إلغاء التعديل",
-                statementRunningBalanceOwed: (amount) => `رصيدله${amount}ريال`,
-                statementRunningBalanceOwes: (amount) => `رصيدعليه${amount}ريال`,
-                statementRunningBalanceZero: `رصيدمتزن`,
+                statementRunningBalanceOwed: (amount) => `له${amount}SR`,
+                statementRunningBalanceOwes: (amount) => `عليه${amount}SR`,
+                statementRunningBalanceZero: `متزن`,
             },
             en: {
                 settings: "Settings", appTitle: "Expense Splitter", manageFriends: "Manage Friends", friendNamePlaceholder: "Friend's name",
@@ -417,7 +417,7 @@
                 individualStatement: "Individual Statement", selectFriend: "Select a friend to view their statement:", selectFriendPlaceholder: "-- Select a friend --",
                 copyStatement: "Copy Statement", noStatementToCopy: "There is no statement to copy.", noFriendSelected: "Please select a friend first.",
                 statementFor: (name) => `📋 Statement: ${name}`,
-                statementOperations: `📝 Transactions:`, operationPaid: "Paid", operationBenefit: "Benefited", currencyUnit: "SAR",
+                statementOperations: `📝 Transactions:`, operationPaid: "Paid", operationBenefit: "Took", currencyUnit: "SR",
                 statementTotalPaid: (amount) => `Total Paid: SAR ${amount.toFixed(2)}`,
                 statementTotalBenefitted: (amount) => `Total Benefited: SAR ${amount.toFixed(2)}`,
                 statementNetOwes: (amount) => `Net: owed SAR ${amount.toFixed(2)}`,
@@ -439,9 +439,9 @@
                 addExtraRow: "Add another person",
                 updateExpense: "Update Expense",
                 cancelEdit: "Cancel Edit",
-                statementRunningBalanceOwed: (amount) => `Balance:owed${amount}SAR`,
-                statementRunningBalanceOwes: (amount) => `Balance:owes${amount}SAR`,
-                statementRunningBalanceZero: `Balance:settled`,
+                statementRunningBalanceOwed: (amount) => `owed${amount}SR`,
+                statementRunningBalanceOwes: (amount) => `owes${amount}SR`,
+                statementRunningBalanceZero: `settled`,
             }
         };
 
@@ -688,7 +688,8 @@
         }
         function formatDateCompact(date) {
             const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
-            const weekday = date.toLocaleDateString(locale, { weekday: 'long' });
+            let weekday = date.toLocaleDateString(locale, { weekday: currentLang === 'ar' ? 'long' : 'short' });
+            if (currentLang === 'ar') weekday = weekday.replace(/^ال/, '');
             const dd = String(date.getDate());
             const mm = String(date.getMonth() + 1).padStart(2, '0');
             return `${weekday}${dd}-${mm}`;
