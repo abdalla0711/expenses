@@ -224,8 +224,18 @@
                                     </button>
                                 </div>
                                 <div class="mt-2">
-                                    <label class="block mb-1 text-xs" data-lang-key="extraForPayerLabel">مبلغ إضافي خاص بمن دفع (اختياري) — يُضاف على حصته فقط دون بقية المشاركين</label>
-                                    <input type="number" id="expenseExtraForPayer" data-lang-key-placeholder="extraForPayerPlaceholder" placeholder="0" class="w-full p-2 border rounded-md text-sm" min="0" step="0.01">
+                                    <button type="button" id="toggleExtraBtn" class="copy-btn" style="font-size:12px; padding:4px 10px;">
+                                        <i data-feather="plus-circle" class="w-3 h-3"></i>
+                                        <span data-lang-key="showExtraLabel">مبلغ إضافي خاص بشخص معيّن</span>
+                                    </button>
+                                    <div id="extraForPayerWrap" class="hidden mt-2">
+                                        <label class="block mb-1 text-xs" data-lang-key="extraForPayerLabel">مبلغ إضافي خاص بشخص معيّن (اختياري) — يُضاف على حصته فقط دون بقية المشاركين</label>
+                                        <div id="extraAllocationsContainer" class="space-y-2"></div>
+                                        <button type="button" id="addExtraRowBtn" class="copy-btn mt-1" style="font-size:12px; padding:4px 10px;">
+                                            <i data-feather="plus" class="w-3 h-3"></i>
+                                            <span data-lang-key="addExtraRow">إضافة شخص آخر</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div>
@@ -256,7 +266,10 @@
                                 <div id="participantsContainer" class="space-y-2"></div>
                             </div>
                         </div>
-                        <button id="addExpenseBtn" class="btn-primary text-white w-full py-2 rounded-md pulse" data-lang-key="addExpense">إضافة المصروف</button>
+                        <div class="flex gap-2">
+                            <button id="addExpenseBtn" class="btn-primary text-white flex-1 py-2 rounded-md pulse" data-lang-key="addExpense">إضافة المصروف</button>
+                            <button id="cancelEditBtn" class="btn-danger text-white py-2 px-4 rounded-md hidden" data-lang-key="cancelEdit">إلغاء التعديل</button>
+                        </div>
                     </div>
                 </details>
     
@@ -371,8 +384,17 @@
                 settlementReceivesFrom: (amount, from) => `⬅️ يستلم ${amount.toFixed(2)} ريال من ${from}`,
                 settlementPaysTo: (amount, to) => `➡️ يدفع ${amount.toFixed(2)} ريال إلى ${to}`,
                 statementCreatedOn: (dateStr) => `🗓️ تاريخ الإنشاء: ${dateStr}`,
-                extraForPayerLabel: "مبلغ إضافي خاص بمن دفع (اختياري) — يُضاف على حصته فقط دون بقية المشاركين",
+                extraForPayerLabel: "مبلغ إضافي خاص بشخص معيّن (اختياري) — يُضاف على حصته فقط دون بقية المشاركين",
                 extraForPayerPlaceholder: "0",
+                showExtraLabel: "＋ مبلغ إضافي خاص بشخص معيّن",
+                hideExtraLabel: "− إخفاء المبلغ الإضافي",
+                extraPersonPlaceholder: "-- لمن؟ --",
+                addExtraRow: "إضافة شخص آخر",
+                updateExpense: "تحديث المصروف",
+                cancelEdit: "إلغاء التعديل",
+                statementRunningBalanceOwed: (amount) => `رصيدله${amount}ريال`,
+                statementRunningBalanceOwes: (amount) => `رصيدعليه${amount}ريال`,
+                statementRunningBalanceZero: `رصيدمتزن`,
             },
             en: {
                 settings: "Settings", appTitle: "Expense Splitter", manageFriends: "Manage Friends", friendNamePlaceholder: "Friend's name",
@@ -409,19 +431,29 @@
                 settlementReceivesFrom: (amount, from) => `⬅️ Receives SAR ${amount.toFixed(2)} from ${from}`,
                 settlementPaysTo: (amount, to) => `➡️ Pays SAR ${amount.toFixed(2)} to ${to}`,
                 statementCreatedOn: (dateStr) => `🗓️ Created: ${dateStr}`,
-                extraForPayerLabel: "Extra personal amount for the payer (optional) — added only to their share",
+                extraForPayerLabel: "Extra personal amount for a specific person (optional) — added only to their share",
                 extraForPayerPlaceholder: "0",
+                showExtraLabel: "＋ Extra amount for a specific person",
+                hideExtraLabel: "− Hide extra amount",
+                extraPersonPlaceholder: "-- For whom? --",
+                addExtraRow: "Add another person",
+                updateExpense: "Update Expense",
+                cancelEdit: "Cancel Edit",
+                statementRunningBalanceOwed: (amount) => `Balance:owed${amount}SAR`,
+                statementRunningBalanceOwes: (amount) => `Balance:owes${amount}SAR`,
+                statementRunningBalanceZero: `Balance:settled`,
             }
         };
 
         // --- DOM ELEMENTS ---
-        const languageToggleBtn = document.getElementById('languageToggleBtn'), friendNameInput = document.getElementById('friendName'), addFriendBtn = document.getElementById('addFriendBtn'), friendsList = document.getElementById('friendsList'), expenseAmount = document.getElementById('expenseAmount'), expenseDesc = document.getElementById('expenseDesc'), paidByContainer = document.getElementById('paidByContainer'), participantsContainer = document.getElementById('participantsContainer'), addExpenseBtn = document.getElementById('addExpenseBtn'), resultsContainer = document.getElementById('resultsContainer'), expensesHistory = document.getElementById('expensesHistory'), copyResultsBtn = document.getElementById('copyResultsBtn'), copyExpensesBtn = document.getElementById('copyExpensesBtn'), calculatorBtn = document.getElementById('calculatorBtn'), calculatorModal = document.getElementById('calculatorModal'), calculatorDisplay = document.getElementById('calculatorDisplay'), friendsModal = document.getElementById('friendsModal'), openFriendsModalBtn = document.getElementById('openFriendsModalBtn'), closeFriendsModalBtn = document.getElementById('closeFriendsModalBtn'), darkModeToggle = document.getElementById('darkModeToggle'), addExpenseDetails = document.getElementById('addExpenseDetails'), ledgersModal = document.getElementById('ledgersModal'), openLedgersModalBtn = document.getElementById('openLedgersModalBtn'), newLedgerNameInput = document.getElementById('newLedgerName'), addLedgerBtn = document.getElementById('addLedgerBtn'), ledgersList = document.getElementById('ledgersList'), activeLedgerTitle = document.getElementById('activeLedgerTitle'), friendStatementSelect = document.getElementById('friendStatementSelect'), statementContainer = document.getElementById('statementContainer'), copyStatementBtn = document.getElementById('copyStatementBtn'), exportBtn = document.getElementById('exportBtn'), importBtn = document.getElementById('importBtn'), resetBtn = document.getElementById('resetBtn'), importFileInput = document.getElementById('importFileInput'), mediatorEnabledCheckbox = document.getElementById('mediatorEnabled'), mediatorFieldsDiv = document.getElementById('mediatorFields'), mediatorSelect = document.getElementById('mediatorSelect'), mediatorPersonASelect = document.getElementById('mediatorPersonASelect'), mediatorPersonBSelect = document.getElementById('mediatorPersonBSelect'), expenseExtraForPayer = document.getElementById('expenseExtraForPayer');
+        const languageToggleBtn = document.getElementById('languageToggleBtn'), friendNameInput = document.getElementById('friendName'), addFriendBtn = document.getElementById('addFriendBtn'), friendsList = document.getElementById('friendsList'), expenseAmount = document.getElementById('expenseAmount'), expenseDesc = document.getElementById('expenseDesc'), paidByContainer = document.getElementById('paidByContainer'), participantsContainer = document.getElementById('participantsContainer'), addExpenseBtn = document.getElementById('addExpenseBtn'), resultsContainer = document.getElementById('resultsContainer'), expensesHistory = document.getElementById('expensesHistory'), copyResultsBtn = document.getElementById('copyResultsBtn'), copyExpensesBtn = document.getElementById('copyExpensesBtn'), calculatorBtn = document.getElementById('calculatorBtn'), calculatorModal = document.getElementById('calculatorModal'), calculatorDisplay = document.getElementById('calculatorDisplay'), friendsModal = document.getElementById('friendsModal'), openFriendsModalBtn = document.getElementById('openFriendsModalBtn'), closeFriendsModalBtn = document.getElementById('closeFriendsModalBtn'), darkModeToggle = document.getElementById('darkModeToggle'), addExpenseDetails = document.getElementById('addExpenseDetails'), ledgersModal = document.getElementById('ledgersModal'), openLedgersModalBtn = document.getElementById('openLedgersModalBtn'), newLedgerNameInput = document.getElementById('newLedgerName'), addLedgerBtn = document.getElementById('addLedgerBtn'), ledgersList = document.getElementById('ledgersList'), activeLedgerTitle = document.getElementById('activeLedgerTitle'), friendStatementSelect = document.getElementById('friendStatementSelect'), statementContainer = document.getElementById('statementContainer'), copyStatementBtn = document.getElementById('copyStatementBtn'), exportBtn = document.getElementById('exportBtn'), importBtn = document.getElementById('importBtn'), resetBtn = document.getElementById('resetBtn'), importFileInput = document.getElementById('importFileInput'), mediatorEnabledCheckbox = document.getElementById('mediatorEnabled'), mediatorFieldsDiv = document.getElementById('mediatorFields'), mediatorSelect = document.getElementById('mediatorSelect'), mediatorPersonASelect = document.getElementById('mediatorPersonASelect'), mediatorPersonBSelect = document.getElementById('mediatorPersonBSelect'), extraAllocationsContainer = document.getElementById('extraAllocationsContainer'), addExtraRowBtn = document.getElementById('addExtraRowBtn'), toggleExtraBtn = document.getElementById('toggleExtraBtn'), extraForPayerWrap = document.getElementById('extraForPayerWrap'), cancelEditBtn = document.getElementById('cancelEditBtn');
         
         // --- STATE ---
         let friends = [], expenses = [], allData = {}, activeLedgerId = null;
         let participantLocks = new Set();
         let mediatorConfig = { enabled: false, mediator: '', personA: '', personB: '' };
         let currentLang = localStorage.getItem('language') || 'ar';
+        let editingExpenseId = null;
         
         // --- EVENT LISTENERS ---
         languageToggleBtn.addEventListener('click', () => setLanguage(currentLang === 'ar' ? 'en' : 'ar'));
@@ -438,9 +470,20 @@
         addFriendBtn.addEventListener('click', addFriend);
         friendNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addFriend(); });
         addExpenseBtn.addEventListener('click', addExpense);
+        cancelEditBtn.addEventListener('click', cancelEditExpense);
         addExpenseDetails.addEventListener('toggle', () => localStorage.setItem('addExpenseOpen', addExpenseDetails.open));
         expenseAmount.addEventListener('input', updateParticipantShares);
-        expenseExtraForPayer.addEventListener('input', updateParticipantShares);
+        addExtraRowBtn.addEventListener('click', () => addExtraAllocationRow());
+        extraAllocationsContainer.addEventListener('change', (e) => { if (e.target.classList.contains('extra-person-select')) updateParticipantShares(); });
+        extraAllocationsContainer.addEventListener('input', (e) => { if (e.target.classList.contains('extra-amount-input')) updateParticipantShares(); });
+        extraAllocationsContainer.addEventListener('click', (e) => { const btn = e.target.closest('.extra-remove-row-btn'); if (btn) { btn.closest('.extra-allocation-row').remove(); updateParticipantShares(); } });
+        toggleExtraBtn.addEventListener('click', () => {
+            const nowHidden = extraForPayerWrap.classList.toggle('hidden');
+            const t = translations[currentLang];
+            toggleExtraBtn.querySelector('span').textContent = nowHidden ? t.showExtraLabel : t.hideExtraLabel;
+            if (nowHidden) { extraAllocationsContainer.innerHTML = ''; updateParticipantShares(); }
+            else if (extraAllocationsContainer.children.length === 0) { addExtraAllocationRow(); }
+        });
         paidByContainer.addEventListener('change', updateParticipantShares);
         participantsContainer.addEventListener('change', (e) => { if (e.target.classList.contains('participant-checkbox')) { if (!e.target.checked) participantLocks.delete(e.target.dataset.name); updateParticipantShares(); } });
         participantsContainer.addEventListener('input', (e) => { if (e.target.classList.contains('participant-share-input') && !e.target.disabled) { participantLocks.add(e.target.dataset.name); updateParticipantShares(); } });
@@ -455,7 +498,70 @@
         function closeModal(modal) { modal.classList.remove('open'); }
         function showAlert(key) { alert(translations[currentLang][key]); }
         function addFriend() { const name = friendNameInput.value.trim(); if (!name) return; if (friends.includes(name)) { showAlert('alertFriendExists'); return; } friends.push(name); friendNameInput.value = ''; renderAll(); saveData(); }
-        function addExpense() { const amount = parseFloat(expenseAmount.value); const description = expenseDesc.value.trim(); const paidByEl = document.querySelector('input[name="paidBy"]:checked'); if (isNaN(amount) || amount <= 0 || !description || !paidByEl) { showAlert('alertInvalidExpense'); return; } const participantCheckboxes = Array.from(document.querySelectorAll('#participantsContainer .participant-checkbox:checked')); if (participantCheckboxes.length === 0) { showAlert('alertSelectParticipant'); return; } const participants = participantCheckboxes.map(cb => cb.dataset.name); const shares = {}; participants.forEach(name => { const input = document.querySelector(`.participant-share-input[data-name="${CSS.escape(name)}"]`); shares[name] = parseFloat(input.value) || 0; }); expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, shares, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) }); expenseAmount.value = ''; expenseDesc.value = ''; expenseExtraForPayer.value = ''; document.querySelectorAll('#participantsContainer .participant-checkbox').forEach(cb => cb.checked = true); document.querySelectorAll('input[name="paidBy"]').forEach(rb => rb.checked = false); participantLocks.clear(); updateParticipantShares(); renderAll(); saveData(); }
+        function addExpense() {
+            const amount = parseFloat(expenseAmount.value);
+            const description = expenseDesc.value.trim();
+            const paidByEl = document.querySelector('input[name="paidBy"]:checked');
+            if (isNaN(amount) || amount <= 0 || !description || !paidByEl) { showAlert('alertInvalidExpense'); return; }
+            const participantCheckboxes = Array.from(document.querySelectorAll('#participantsContainer .participant-checkbox:checked'));
+            if (participantCheckboxes.length === 0) { showAlert('alertSelectParticipant'); return; }
+            const participants = participantCheckboxes.map(cb => cb.dataset.name);
+            const shares = {};
+            participants.forEach(name => { const input = document.querySelector(`.participant-share-input[data-name="${CSS.escape(name)}"]`); shares[name] = parseFloat(input.value) || 0; });
+
+            if (editingExpenseId !== null) {
+                const idx = expenses.findIndex(e => e.id === editingExpenseId);
+                if (idx !== -1) {
+                    expenses[idx] = { ...expenses[idx], amount, description, paidBy: paidByEl.value, participants, shares };
+                }
+                editingExpenseId = null;
+            } else {
+                expenses.push({ id: Date.now(), amount, description, paidBy: paidByEl.value, participants, shares, date: new Date().toLocaleString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) });
+            }
+
+            resetExpenseForm();
+            renderAll();
+            saveData();
+        }
+
+        function resetExpenseForm() {
+            expenseAmount.value = ''; expenseDesc.value = '';
+            extraAllocationsContainer.innerHTML = '';
+            extraForPayerWrap.classList.add('hidden');
+            toggleExtraBtn.querySelector('span').textContent = translations[currentLang].showExtraLabel;
+            document.querySelectorAll('#participantsContainer .participant-checkbox').forEach(cb => cb.checked = true);
+            document.querySelectorAll('input[name="paidBy"]').forEach(rb => rb.checked = false);
+            participantLocks.clear();
+            updateParticipantShares();
+            addExpenseBtn.textContent = translations[currentLang].addExpense;
+            cancelEditBtn.classList.add('hidden');
+        }
+
+        function startEditExpense(exp) {
+            editingExpenseId = exp.id;
+            addExpenseDetails.open = true;
+            expenseAmount.value = exp.amount;
+            expenseDesc.value = exp.description;
+            extraAllocationsContainer.innerHTML = '';
+            extraForPayerWrap.classList.add('hidden');
+            toggleExtraBtn.querySelector('span').textContent = translations[currentLang].showExtraLabel;
+            document.querySelectorAll('input[name="paidBy"]').forEach(rb => { rb.checked = (rb.value === exp.paidBy); });
+            participantLocks = new Set(exp.participants);
+            document.querySelectorAll('#participantsContainer .participant-checkbox').forEach(cb => {
+                const isParticipant = exp.participants.includes(cb.dataset.name);
+                cb.checked = isParticipant;
+                const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(cb.dataset.name)}"]`);
+                if (input) { input.disabled = !isParticipant; input.value = isParticipant ? getShare(exp, cb.dataset.name).toFixed(2) : '0.00'; }
+            });
+            addExpenseBtn.textContent = translations[currentLang].updateExpense;
+            cancelEditBtn.classList.remove('hidden');
+            addExpenseDetails.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function cancelEditExpense() {
+            editingExpenseId = null;
+            resetExpenseForm();
+        }
 
         // --- DATA & STATE ---
         function setLanguage(lang) {
@@ -467,6 +573,8 @@
             document.querySelectorAll('.tag-btn[data-tag-key]').forEach(el => { const key = el.getAttribute('data-tag-key'); if (langData[key]) el.textContent = langData[key]; });
             const activeLedger = allData.ledgers[activeLedgerId];
             activeLedgerTitle.textContent = activeLedger ? activeLedger.name : translations[currentLang].appTitle;
+            toggleExtraBtn.querySelector('span').textContent = extraForPayerWrap.classList.contains('hidden') ? langData.showExtraLabel : langData.hideExtraLabel;
+            addExpenseBtn.textContent = editingExpenseId !== null ? langData.updateExpense : langData.addExpense;
             renderAll();
         }
         function saveData() { if (activeLedgerId) { allData.ledgers[activeLedgerId].friends = friends; allData.ledgers[activeLedgerId].expenses = expenses; allData.ledgers[activeLedgerId].mediator = mediatorConfig; allData.activeLedgerId = activeLedgerId; localStorage.setItem('expenseLedgerData', JSON.stringify(allData)); } }
@@ -490,34 +598,63 @@
         function renderPaidByAndParticipants() {
             paidByContainer.innerHTML = friends.length === 0 ? `<p class="text-sm text-center">${translations[currentLang].addFriendsFirst}</p>` : friends.map(friend => `<div class="flex items-center"><input type="radio" id="radio-${friend}" name="paidBy" value="${friend}" class="mx-2 h-4 w-4"><label for="radio-${friend}">${friend}</label></div>`).join('');
             participantsContainer.innerHTML = friends.length === 0 ? `<p class="text-sm text-center">${translations[currentLang].addFriendsFirst}</p>` : friends.map(friend => `<div class="flex items-center justify-between gap-2"><div class="flex items-center flex-1 min-w-0"><input type="checkbox" id="checkbox-${friend}" data-name="${friend}" value="${friend}" checked class="participant-checkbox mx-2 h-4 w-4 shrink-0"><label for="checkbox-${friend}" class="truncate">${friend}</label></div><input type="number" class="participant-share-input w-20 p-1 border rounded-md text-sm text-center" data-name="${friend}" min="0" step="0.01" value="0"></div>`).join('');
+            refreshExtraPersonSelects();
             participantLocks.clear();
             updateParticipantShares();
         }
+        function refreshExtraPersonSelects() {
+            const placeholder = `<option value="">${translations[currentLang].extraPersonPlaceholder}</option>`;
+            const optionsHtml = friends.map(f => `<option value="${f}">${f}</option>`).join('');
+            extraAllocationsContainer.querySelectorAll('.extra-person-select').forEach(sel => {
+                const prev = sel.value;
+                sel.innerHTML = placeholder + optionsHtml;
+                sel.value = friends.includes(prev) ? prev : '';
+            });
+        }
+        function addExtraAllocationRow(presetPerson) {
+            const placeholder = `<option value="">${translations[currentLang].extraPersonPlaceholder}</option>`;
+            const optionsHtml = friends.map(f => `<option value="${f}">${f}</option>`).join('');
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 extra-allocation-row';
+            row.innerHTML = `<select class="extra-person-select p-2 border rounded-md text-sm" style="max-width:40%;">${placeholder}${optionsHtml}</select><input type="number" class="extra-amount-input flex-1 p-2 border rounded-md text-sm" placeholder="0" min="0" step="0.01"><button type="button" class="extra-remove-row-btn text-red-500 px-2"><i data-feather="x" class="w-4 h-4"></i></button>`;
+            extraAllocationsContainer.appendChild(row);
+            if (presetPerson) row.querySelector('.extra-person-select').value = presetPerson;
+            feather.replace();
+        }
+        function getExtraAllocations() {
+            return Array.from(extraAllocationsContainer.querySelectorAll('.extra-allocation-row')).map(row => ({
+                name: row.querySelector('.extra-person-select').value,
+                amount: parseFloat(row.querySelector('.extra-amount-input').value) || 0
+            })).filter(a => a.name && a.amount > 0.009);
+        }
         function updateParticipantShares() {
             const total = parseFloat(expenseAmount.value) || 0;
-            const extra = parseFloat(expenseExtraForPayer.value) || 0;
-            const paidByEl = document.querySelector('input[name="paidBy"]:checked');
-            const payerName = paidByEl ? paidByEl.value : null;
             const checkboxes = Array.from(participantsContainer.querySelectorAll('.participant-checkbox'));
             const checkedNames = checkboxes.filter(cb => cb.checked).map(cb => cb.dataset.name);
-            const useExtra = extra > 0.009 && payerName && checkedNames.includes(payerName);
+            const rawAllocations = getExtraAllocations().filter(a => checkedNames.includes(a.name));
+            const extraByName = {};
+            rawAllocations.forEach(a => { extraByName[a.name] = (extraByName[a.name] || 0) + a.amount; });
+            const extraNames = Object.keys(extraByName);
+            const sumExtra = extraNames.reduce((s, n) => s + extraByName[n], 0);
 
             checkboxes.forEach(cb => {
                 const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(cb.dataset.name)}"]`);
                 if (!input) return;
-                const isForcedPayer = useExtra && cb.dataset.name === payerName;
-                input.disabled = !cb.checked || isForcedPayer;
-                if (!cb.checked || isForcedPayer) participantLocks.delete(cb.dataset.name);
+                const isForcedExtra = extraNames.includes(cb.dataset.name);
+                input.disabled = !cb.checked || isForcedExtra;
+                if (!cb.checked || isForcedExtra) participantLocks.delete(cb.dataset.name);
             });
 
-            if (useExtra) {
-                const base = checkedNames.length > 0 ? (total - extra) / checkedNames.length : 0;
-                const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(payerName)}"]`);
-                if (input) input.value = (base + extra).toFixed(2);
+            if (extraNames.length > 0) {
+                const base = checkedNames.length > 0 ? (total - sumExtra) / checkedNames.length : 0;
+                extraNames.forEach(n => {
+                    const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(n)}"]`);
+                    if (input) input.value = (base + extraByName[n]).toFixed(2);
+                });
             }
 
-            const lockedNames = checkedNames.filter(n => (useExtra && n === payerName) || participantLocks.has(n));
-            const unlockedNames = checkedNames.filter(n => !(useExtra && n === payerName) && !participantLocks.has(n));
+            const lockedNames = checkedNames.filter(n => extraNames.includes(n) || participantLocks.has(n));
+            const unlockedNames = checkedNames.filter(n => !extraNames.includes(n) && !participantLocks.has(n));
             let lockedSum = 0;
             lockedNames.forEach(n => { const input = participantsContainer.querySelector(`.participant-share-input[data-name="${CSS.escape(n)}"]`); lockedSum += parseFloat(input.value) || 0; });
             const remaining = total - lockedSum;
@@ -549,7 +686,15 @@
             const dateStr = date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
             return `${weekday}، ${dateStr}`;
         }
-        function renderExpensesHistory() { expensesHistory.innerHTML = expenses.length === 0 ? `<p class="text-center">${translations[currentLang].noExpenses}</p>` : expenses.slice().reverse().map(exp => `<div class="history-item p-4 rounded-lg"><div class="flex justify-between items-start"><div><h3 class="font-medium">${exp.description}</h3><p class="text-sm">${translations[currentLang].historyPaidBy(exp.amount, exp.paidBy)}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${exp.date}</p></div><button class="text-red-500 hover:text-red-700 delete-expense-btn" data-id="${exp.id}"><i data-feather="trash-2" width="16"></i></button></div><div class="mt-2 text-sm"><span>${translations[currentLang].historyParticipants(exp.participants)}</span></div></div>`).join(''); document.querySelectorAll('.delete-expense-btn').forEach(btn => btn.addEventListener('click', (e) => { expenses = expenses.filter(exp => exp.id !== parseInt(e.currentTarget.dataset.id)); renderAll(); saveData(); feather.replace(); })); }
+        function formatDateCompact(date) {
+            const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+            const weekday = date.toLocaleDateString(locale, { weekday: 'long' });
+            const dd = String(date.getDate());
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            return `${weekday}${dd}-${mm}`;
+        }
+        function fmtAmt(n) { const r = Math.round(n * 100) / 100; return Number.isInteger(r) ? String(r) : r.toFixed(2); }
+        function renderExpensesHistory() { expensesHistory.innerHTML = expenses.length === 0 ? `<p class="text-center">${translations[currentLang].noExpenses}</p>` : expenses.slice().reverse().map(exp => `<div class="history-item p-4 rounded-lg"><div class="flex justify-between items-start"><div><h3 class="font-medium">${exp.description}</h3><p class="text-sm">${translations[currentLang].historyPaidBy(exp.amount, exp.paidBy)}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${exp.date}</p></div><div class="flex items-center gap-1 shrink-0"><button class="text-blue-500 hover:text-blue-700 edit-expense-btn" data-id="${exp.id}"><i data-feather="edit-2" width="16"></i></button><button class="text-red-500 hover:text-red-700 delete-expense-btn" data-id="${exp.id}"><i data-feather="trash-2" width="16"></i></button></div></div><div class="mt-2 text-sm"><span>${translations[currentLang].historyParticipants(exp.participants)}</span></div></div>`).join(''); document.querySelectorAll('.delete-expense-btn').forEach(btn => btn.addEventListener('click', (e) => { const id = parseInt(e.currentTarget.dataset.id); expenses = expenses.filter(exp => exp.id !== id); if (editingExpenseId === id) cancelEditExpense(); renderAll(); saveData(); feather.replace(); })); document.querySelectorAll('.edit-expense-btn').forEach(btn => btn.addEventListener('click', (e) => { const id = parseInt(e.currentTarget.dataset.id); const exp = expenses.find(x => x.id === id); if (exp) startEditExpense(exp); })); }
 
         // --- CALCULATION LOGIC ---
         function calculateSettlement() {
@@ -624,7 +769,7 @@
             const entries = [];
 
             expenses.slice().sort((a, b) => getExpenseDate(a) - getExpenseDate(b)).forEach(exp => {
-                const dateLabel = formatDateLabel(getExpenseDate(exp));
+                const dateLabel = formatDateCompact(getExpenseDate(exp));
                 if (exp.paidBy === friendName) {
                     totalPaid += exp.amount;
                     entries.push({ type: 'paid', desc: exp.description, amount: exp.amount, dateLabel });
@@ -642,7 +787,14 @@
             statementText += `\n${t.statementCreatedOn(formatDateLabel(new Date()))}\n`;
             if (entries.length > 0) {
                 statementText += `\n${t.statementOperations}`;
-                entries.forEach(e => { statementText += e.type === 'paid' ? `\n🔸 ${t.operationPaid}: ${e.desc} — ${e.amount.toFixed(2)} ${t.currencyUnit} (${e.dateLabel})` : `\n🔹 ${t.operationBenefit}: ${e.desc} — ${e.amount.toFixed(2)} ${t.currencyUnit} (${e.dateLabel})`; });
+                let runningBalance = 0;
+                entries.forEach(e => {
+                    runningBalance += e.type === 'paid' ? e.amount : -e.amount;
+                    const balanceStr = Math.abs(runningBalance) < 0.01 ? t.statementRunningBalanceZero : (runningBalance > 0 ? t.statementRunningBalanceOwed(fmtAmt(runningBalance)) : t.statementRunningBalanceOwes(fmtAmt(Math.abs(runningBalance))));
+                    const icon = e.type === 'paid' ? '🔸' : '🔹';
+                    const opLabel = e.type === 'paid' ? t.operationPaid : t.operationBenefit;
+                    statementText += `\n${icon}${opLabel}:${fmtAmt(e.amount)}${t.currencyUnit}|${e.desc}|${e.dateLabel}|${balanceStr}`;
+                });
                 statementText += `\n`;
             }
 
